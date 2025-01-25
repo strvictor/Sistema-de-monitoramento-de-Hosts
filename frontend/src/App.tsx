@@ -1,13 +1,11 @@
-import { Button } from "./components/ui/button"
+import { LoginPage } from "./components/LoginPage";
 
 function App() {
-
   return (
-    <div>
-      <h1>Ola mundo</h1>
-      <Button>aperte-me</Button>
+    <div className="p-6 max-w-lg mx-auto bg-gray-50 min-h-screen">
+      <LoginPage />
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
