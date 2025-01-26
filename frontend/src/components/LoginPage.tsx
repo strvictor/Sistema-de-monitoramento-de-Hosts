@@ -8,18 +8,30 @@ import { RegisterForm } from "./RegisterForm";  // Importando o componente Regis
 
 export function LoginPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = async (data: { email: string; password: string }) => {
+  const handleLogin = async (data: { username: string; password: string }) => {
     try {
-      const response = await axios.post('https://seu-endpoint-de-login.com/api/login', data);
-      console.log("Login bem-sucedido:", response.data);
-      // Faça algo com a resposta, como salvar o token ou redirecionar o usuário
-    } catch (error) {
-      console.error("Erro ao fazer login:", error);
-      console.log('erro!!!!!')
-      // Trate o erro, como mostrar uma mensagem de erro ao usuário
+      const response = await axios.post('http://localhost:8000/api/token/', data);
+  
+      // Pegando o token JWT (access e refresh)
+      const { access, refresh } = response.data;
+  
+      // Salvando os tokens no localStorage
+      localStorage.setItem("accessToken", access);
+      localStorage.setItem("refreshToken", refresh);
+  
+      console.log("Login bem-sucedido, tokens armazenados!");
+      console.log(access);
+      console.log(refresh);
+  
+      // Aqui você pode redirecionar ou atualizar o estado da aplicação
+      // Exemplo: navegação para a página principal
+      // window.location.href = "/dashboard";
+  
+    } catch (error: any) {
+      console.error("Erro ao fazer login:", error.response?.data || error.message);
     }
   };
 
@@ -29,21 +41,21 @@ export function LoginPage() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          handleLogin({ email, password });
+          handleLogin({ username, password });
         }}
         className="space-y-4"
       >
         <div>
-          <label htmlFor="email" className="block text-sm font-medium mb-1">
-            Email
+          <label htmlFor="username" className="block text-sm font-medium mb-1">
+            E-mail
           </label>
           <Input
-            id="email"
-            type="email"
-            name="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Digite seu email"
+            id="username"
+            type="username"
+            name="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Digite seu e-mail"
             className="border border-gray-300"
             required
           />
