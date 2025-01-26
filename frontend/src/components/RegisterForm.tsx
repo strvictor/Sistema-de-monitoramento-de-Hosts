@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { AlertDescription, AlertTitle } from "./ui/alert";
 import axios from "axios";
-
 import {
   DialogDescription,
   DialogFooter,
@@ -13,41 +13,69 @@ import {
 
 export function RegisterForm() {
   // Estados para armazenar os valores do formulário
-  const [nome, setNome] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmedpassword, setConfirmedpassword] = useState('');
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmedpassword, setConfirmedpassword] = useState("");
+  const [alert, setAlert] = useState({ type: "", message: "" });
 
   // Função para lidar com o registro
   const handleRegister = async () => {
     if (password !== confirmedpassword) {
-      console.error("As senhas não coincidem!");
+      setAlert({ type: "error", message: "As senhas não coincidem!" });
+      setTimeout(() => setAlert({ type: "", message: "" }), 6000);
       return;
     }
 
     try {
-      // Dados que serão enviados ao backend
       const data = {
         name: nome,
         email: email,
         password: password,
       };
 
-      // Requisição POST para o endpoint de criação de conta
-      const response = await axios.post('http://localhost:8000/api/create-account/', data);
+      const response = await axios.post(
+        "http://localhost:8000/api/create-account/",
+        data
+      );
 
-      // Resposta bem-sucedida
       console.log("Usuário registrado com sucesso:", response.data);
+      setAlert({
+        type: "success",
+        message: "Conta criada com sucesso! Redirecionando...",
+      });
 
-      // Você pode redirecionar ou exibir uma mensagem de sucesso
-      // Exemplo: window.location.href = "/login";
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 5000);
     } catch (error: any) {
       console.error("Erro ao registrar o usuário:", error.response?.data || error.message);
+      setAlert({
+        type: "error",
+        message: error.response?.data?.error || "Erro desconhecido. Tente novamente.",
+      });
+      setTimeout(() => setAlert({ type: "", message: "" }), 8000);
     }
   };
 
   return (
-    <div>
+    <div className="relative">
+      {/* Alerta de sucesso ou erro */}
+      {alert.type && (
+        <div
+          className={`mb-4 mt-4 transition-all duration-500 ease-in-out p-4 rounded ${
+            alert.type === "success"
+              ? "bg-green-50 text-green-600"
+              : "bg-red-50 text-red-600"
+          }`}
+        >
+          <AlertTitle>
+            {alert.type === "success" ? "Sucesso!" : "Erro!"}
+          </AlertTitle>
+          <AlertDescription>{alert.message}</AlertDescription>
+        </div>
+      )}
+
       <form
         onSubmit={(e) => {
           e.preventDefault();

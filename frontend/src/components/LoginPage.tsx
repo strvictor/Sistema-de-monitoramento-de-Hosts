@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Dialog, DialogContent } from "./ui/dialog"
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+
 import axios from 'axios';
 
 import { RegisterForm } from "./RegisterForm";  // Importando o componente RegisterForm
@@ -26,17 +28,28 @@ export function LoginPage() {
       console.log(access);
       console.log(refresh);
   
-      // Aqui você pode redirecionar ou atualizar o estado da aplicação
-      // Exemplo: navegação para a página principal
-      // window.location.href = "/dashboard";
+
+      window.location.href = "/dashboard";
   
     } catch (error: any) {
       console.error("Erro ao fazer login:", error.response?.data || error.message);
-    }
+      const errorAlert = document.getElementById('card-error');
+      if (errorAlert) {
+        errorAlert.classList.remove('hidden');
+        await new Promise(resolve => setTimeout(resolve, 8000));
+        errorAlert.classList.add('hidden');
+      }
+    };
   };
 
   return (
     <div>
+      <Alert id="card-error" className="mb-4 mt-4 hidden">
+        <AlertTitle className="text-red-400">Ops, tivemos um problema!</AlertTitle>
+        <AlertDescription className="text-red-100">
+          E-mail ou senha inválidos.
+        </AlertDescription>
+      </Alert>
       <h1 className="text-2xl font-bold text-center mb-4">Login</h1>
       <form
         onSubmit={(e) => {
@@ -72,6 +85,7 @@ export function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Digite sua senha"
             className="border border-gray-300"
+            minLength={8}
             required
           />
         </div>
