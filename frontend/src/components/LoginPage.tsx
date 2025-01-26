@@ -1,18 +1,26 @@
 import { useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import {
-    Dialog,
-    DialogContent,
-  } from "./ui/dialog"
+import { Dialog, DialogContent } from "./ui/dialog"
+import axios from 'axios';
 
 import { RegisterForm } from "./RegisterForm";  // Importando o componente RegisterForm
 
 export function LoginPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  const handleLogin = (data: any) => {
-    console.log("Login enviado:", data);
+  const handleLogin = async (data: { email: string; password: string }) => {
+    try {
+      const response = await axios.post('https://seu-endpoint-de-login.com/api/login', data);
+      console.log("Login bem-sucedido:", response.data);
+      // Faça algo com a resposta, como salvar o token ou redirecionar o usuário
+    } catch (error) {
+      console.error("Erro ao fazer login:", error);
+      console.log('erro!!!!!')
+      // Trate o erro, como mostrar uma mensagem de erro ao usuário
+    }
   };
 
   return (
@@ -21,10 +29,7 @@ export function LoginPage() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          handleLogin({
-            email: e.target.email.value,
-            password: e.target.password.value,
-          });
+          handleLogin({ email, password });
         }}
         className="space-y-4"
       >
@@ -35,6 +40,9 @@ export function LoginPage() {
           <Input
             id="email"
             type="email"
+            name="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             placeholder="Digite seu email"
             className="border border-gray-300"
             required
@@ -47,6 +55,9 @@ export function LoginPage() {
           <Input
             id="password"
             type="password"
+            name="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             placeholder="Digite sua senha"
             className="border border-gray-300"
             required
