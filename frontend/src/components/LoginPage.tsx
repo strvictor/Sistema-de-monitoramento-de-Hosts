@@ -3,6 +3,9 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Dialog, DialogContent } from "./ui/dialog"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { useNavigate } from 'react-router-dom';
+import api from '../axiosConfig'; // Importando o Axios configurado
+
 
 import axios from 'axios';
 
@@ -12,10 +15,11 @@ export function LoginPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const navigate = useNavigate();
 
   const handleLogin = async (data: { username: string; password: string }) => {
     try {
-      const response = await axios.post('http://localhost:8000/api/token/', data);
+      const response = await api.post('token/', data);
   
       // Pegando o token JWT (access e refresh)
       const { access, refresh } = response.data;
@@ -29,15 +33,14 @@ export function LoginPage() {
       console.log(refresh);
   
 
-      window.location.href = "/dashboard";
-  
+      navigate('/dashboard');  // Redireciona para a página Dashboard
+      
+      
     } catch (error: any) {
       console.error("Erro ao fazer login:", error.response?.data || error.message);
       const errorAlert = document.getElementById('card-error');
       if (errorAlert) {
         errorAlert.classList.remove('hidden');
-        await new Promise(resolve => setTimeout(resolve, 8000));
-        errorAlert.classList.add('hidden');
       }
     };
   };
