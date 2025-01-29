@@ -1,13 +1,16 @@
-export function Dashboard() {
+import { AppSideBar } from "./AppSideBar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 
+export function Dashboard() {
   return (
-    <div>
-        <div className="flex justify-center items-center">
-            <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+    <SidebarProvider>
+      <AppSideBar />
+      <main>
+        <SidebarTrigger />
+        <div>
+          <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Facilis dicta placeat ipsa voluptate veritatis velit cupiditate a magni perspiciatis rem! Nesciunt repellat cum odit, quaerat exercitationem delectus perspiciatis harum ullam.</p>
         </div>
-        <div className="flex justify-center items-center">
-            <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Delectus autem eius illum maiores corporis? Nostrum earum voluptate odit beatae quibusdam! Dicta, exercitationem doloribus. Expedita natus consequatur mollitia sunt error quos.</p>
-        </div>
-    </div>
+      </main>
+    </SidebarProvider>
   );
 }
