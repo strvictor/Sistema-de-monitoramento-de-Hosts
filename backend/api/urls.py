@@ -8,4 +8,6 @@ urlpatterns = [
     path('token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     path('create-account/', create_account, name='create-account'),
     path('login/', login_account, name='login-account'),
+    path('user-data/', get_user_data, name='get_user_data'),
+
 ]

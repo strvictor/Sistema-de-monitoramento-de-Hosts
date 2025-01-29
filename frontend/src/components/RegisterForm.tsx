@@ -46,8 +46,8 @@ export function RegisterForm() {
       });
 
       setTimeout(() => {
-        window.location.href = "/";
-      }, 5000);
+        window.location.href = "/login";
+      }, 4000);
     } catch (error: any) {
       console.error("Erro ao registrar o usuário:", error.response?.data || error.message);
       setAlert({

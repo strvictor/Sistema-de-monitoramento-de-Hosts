@@ -53,3 +53,33 @@ def login_account(request):
         # Autenticação falhou
         return JsonResponse({'message': 'Autenticação falhou'}, status=401)
     
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from django.contrib.auth.models import User
+from django.http import JsonResponse
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])  # Garante que apenas usuários autenticados acessem
+def get_user_data(request):
+    auth = JWTAuthentication()
+    header = request.headers.get('Authorization')
+
+    if not header:
+        return JsonResponse({'error': 'Token não fornecido'}, status=401)
+
+    try:
+        token = header.split(' ')[1]  # Remove "Bearer " do início
+        validated_token = auth.get_validated_token(token)
+        user = auth.get_user(validated_token)  # Obtém o usuário do token
+    except Exception as e:
+        return JsonResponse({'error': 'Token inválido ou expirado'}, status=401)
+
+    data = {
+        'id': user.id,
+        'name': user.get_full_name(),
+        'email': user.email,
+    }
+
+    return JsonResponse(data)
