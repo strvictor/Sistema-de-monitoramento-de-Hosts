@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import {LoginPage} from './components/LoginPage';
-import {Dashboard} from './components/Dashboard';
+import Dashboard from './components/Dashboard';
 import PrivateRoute from './components/PrivateRoute';
 
 function App() {
