@@ -65,6 +65,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         isActive: true,
         items: [
           {
+            title: "Cadastrar Host",
+            url: "/cadastro-host",
+          },
+          {
             title: "Dashboard",
             url: "/dashboard",
           },

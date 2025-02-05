@@ -7,8 +7,6 @@ import { useNavigate } from 'react-router-dom';
 import api from '../axiosConfig'; // Importando o Axios configurado
 
 
-import axios from 'axios';
-
 import { RegisterForm } from "./RegisterForm";  // Importando o componente RegisterForm
 
 export function LoginPage() {

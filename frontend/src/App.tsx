@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import {LoginPage} from './components/LoginPage';
 import Dashboard from './components/Dashboard';
 import PrivateRoute from './components/PrivateRoute';
+import CreateHost from './components/CreateHost';
 
 function App() {
   return (
@@ -20,6 +21,10 @@ function App() {
           <Route 
             path="/dashboard" 
             element={<PrivateRoute element={<Dashboard />} />} 
+          />
+          <Route 
+            path="/cadastro-host" 
+            element={<PrivateRoute element={<CreateHost />} />} 
           />
         </Routes>
       </Router>

@@ -14,7 +14,9 @@ import {
   SidebarTrigger,
 } from "./ui/sidebar"
 
-export default function Dashboard() {
+import { ComponentCreateHost } from './ComponentCreatHost'
+
+export default function CreateHost() {
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -23,17 +25,17 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
-            <h1 className="text-2xl font-bold">Dashboard</h1>
+            <h1 className="text-2xl font-bold">Adicione seu Host</h1>
           </div>
           <div className="flex items-center gap-4 ml-auto px-4">
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <BreadcrumbLink href="/">Home</BreadcrumbLink>
+                  <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
-                  <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
+                  <BreadcrumbLink href="/cadastro-host">Hosts</BreadcrumbLink>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
@@ -41,7 +43,7 @@ export default function Dashboard() {
         </header>
         <div className="flex flex-1 flex-col p-4 pt-0">
           <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min p-4">
-          <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Suscipit officiis laudantium perspiciatis facere harum ea ipsam tenetur assumenda deleniti voluptatem, magni magnam esse saepe odit, veritatis architecto quasi aliquid dignissimos.</p>
+          <ComponentCreateHost />
           </div>
         </div>
       </SidebarInset>
