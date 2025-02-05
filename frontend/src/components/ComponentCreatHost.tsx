@@ -35,48 +35,57 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
-const data: Payment[] = [
+const data: Host[] = [
   {
     id: "m5gr84i9",
-    amount: 316,
-    status: "success",
-    email: "ken99@yahoo.com",
+    status: "ativo",
+    dominio: "example.com",
+    frequencia: "de hora em hora",
+    ultimaVerificacao: "2023-10-01 12:00",
   },
   {
     id: "3u1reuv4",
-    amount: 242,
-    status: "success",
-    email: "Abe45@gmail.com",
+    status: "inativo",
+    dominio: "test.com",
+    frequencia: "diariamente",
+    ultimaVerificacao: "2023-10-01 08:00",
   },
   {
     id: "derv1ws0",
-    amount: 837,
-    status: "processing",
-    email: "Monserrat44@gmail.com",
-  },
-  {
-    id: "5kma53ae",
-    amount: 874,
-    status: "success",
-    email: "Silas22@gmail.com",
-  },
-  {
-    id: "bhqecj4p",
-    amount: 721,
-    status: "failed",
-    email: "carmella@hotmail.com",
+    status: "ativo",
+    dominio: "demo.com",
+    frequencia: "semanalmente",
+    ultimaVerificacao: "2023-09-30 10:00",
   },
 ]
 
-export type Payment = {
+export type Host = {
   id: string
-  amount: number
-  status: "pending" | "processing" | "success" | "failed"
-  email: string
+  status: "ativo" | "inativo"
+  dominio: string
+  frequencia: "de hora em hora" | "diariamente" | "semanalmente"
+  ultimaVerificacao: string
 }
 
-export const columns: ColumnDef<Payment>[] = [
+export const columns: ColumnDef<Host>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -107,40 +116,46 @@ export const columns: ColumnDef<Payment>[] = [
     ),
   },
   {
-    accessorKey: "email",
-    header: ({ column }) => {
+    accessorKey: "dominio",
+    header: "Domínio",
+    cell: ({ row }) => <div>{row.getValue("dominio")}</div>,
+  },
+  {
+    accessorKey: "frequencia",
+    header: "Atualização do Host",
+    cell: ({ row }) => {
+      const frequencia = row.getValue("frequencia") as string
       return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        <Select
+          value={frequencia}
+          onValueChange={(value) => {
+            row.original.frequencia = value as Host["frequencia"]
+          }}
         >
-          Email
-          <ArrowUpDown />
-        </Button>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Selecione a frequência" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="de hora em hora">De hora em hora</SelectItem>
+            <SelectItem value="diariamente">Diariamente</SelectItem>
+            <SelectItem value="semanalmente">Semanalmente</SelectItem>
+          </SelectContent>
+        </Select>
       )
     },
-    cell: ({ row }) => <div className="lowercase">{row.getValue("email")}</div>,
   },
   {
-    accessorKey: "amount",
-    header: () => <div className="text-right">Amount</div>,
-    cell: ({ row }) => {
-      const amount = parseFloat(row.getValue("amount"))
-
-      // Format the amount as a dollar amount
-      const formatted = new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-      }).format(amount)
-
-      return <div className="text-right font-medium">{formatted}</div>
-    },
-  },
-  {
+    accessorKey: "ultimaVerificacao",
+    header: "Última Atualização",
+    cell: ({ row }) => <div>{row.getValue("ultimaVerificacao")}</div>,
+},
+{
+    accessorKey: "actions",
+    header: "Ação",
     id: "actions",
     enableHiding: false,
     cell: ({ row }) => {
-      const payment = row.original
+      const host = row.original
 
       return (
         <DropdownMenu>
@@ -153,13 +168,13 @@ export const columns: ColumnDef<Payment>[] = [
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(payment.id)}
+              onClick={() => navigator.clipboard.writeText(host.id)}
             >
-              Copy payment ID
+              Copy host ID
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>View customer</DropdownMenuItem>
-            <DropdownMenuItem>View payment details</DropdownMenuItem>
+            <DropdownMenuItem>View details</DropdownMenuItem>
+            <DropdownMenuItem>Edit host</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )
@@ -199,39 +214,62 @@ export function ComponentCreateHost() {
     <div className="w-full">
       <div className="flex items-center py-4">
         <Input
-          placeholder="Filter emails..."
-          value={(table.getColumn("email")?.getFilterValue() as string) ?? ""}
+          placeholder="Filter domains..."
+          value={(table.getColumn("dominio")?.getFilterValue() as string) ?? ""}
           onChange={(event) =>
-            table.getColumn("email")?.setFilterValue(event.target.value)
+            table.getColumn("dominio")?.setFilterValue(event.target.value)
           }
           className="max-w-sm"
         />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+        <Dialog>
+          <DialogTrigger asChild>
             <Button variant="outline" className="ml-auto">
-              Columns <ChevronDown />
+              Add Host
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
-                    }
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                )
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Add New Host</DialogTitle>
+              <DialogDescription>
+                Fill in the details below to add a new host for monitoring.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="dominio" className="text-right">
+                  Domínio
+                </Label>
+                <Input id="dominio" className="col-span-3" />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="status" className="text-right">
+                  Status
+                </Label>
+                <Input id="status" className="col-span-3" />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="frequencia" className="text-right">
+                  Atualização
+                </Label>
+                <Select>
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Selecione a frequência" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="de hora em hora">
+                      De hora em hora
+                    </SelectItem>
+                    <SelectItem value="diariamente">Diariamente</SelectItem>
+                    <SelectItem value="semanalmente">Semanalmente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit">Save changes</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
       <div className="rounded-md border">
         <Table>
