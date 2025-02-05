@@ -1,8 +1,30 @@
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-import json
 from django.contrib.auth.models import User
+from api.models import FrequenciaAtualizacao, Host
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
+import json
+
+def validate_request(request):
+    auth = JWTAuthentication()
+    header = request.headers.get('Authorization')
+
+    if not header:
+        return False, JsonResponse({'error': 'Token não fornecido'}, status=401)
+
+    try:
+        token = header.split(' ')[1]  # Remove "Bearer " do início
+        validated_token = auth.get_validated_token(token)
+        user = auth.get_user(validated_token) # Obtém o usuário do token
+        if user is None:
+            return False, JsonResponse({'error': 'Token inválido ou expirado'}, status=401)
+    except Exception as e:
+        return False, JsonResponse({'error': 'Token inválido ou expirado'}, status=401)
+    
+    return True, user
 
 @csrf_exempt
 def create_account(request):
@@ -35,51 +57,32 @@ def create_account(request):
 
     return JsonResponse({'error': 'Método não permitido. Use POST.'}, status=405)
 
-
-def login_account(request):
-    if request.method == "POST":
-        # email = request.POST.get('email')
-        # senha = request.POST.get('senha')
-        # print(request.POST)
-        print(request.data)
-        return JsonResponse({'retorno': 'teste123'}, status=200)
-        # # Autenticar usando o email
-        # usuario = authenticate(request, username=email, password=senha)
-        
-        # if usuario is not None:
-        #     login(request, usuario)
-        #     return redirect('home')
-    else:
-        # Autenticação falhou
-        return JsonResponse({'message': 'Autenticação falhou'}, status=401)
-    
-
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from django.contrib.auth.models import User
-from django.http import JsonResponse
-
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])  # Garante que apenas usuários autenticados acessem
 def get_user_data(request):
-    auth = JWTAuthentication()
-    header = request.headers.get('Authorization')
-
-    if not header:
-        return JsonResponse({'error': 'Token não fornecido'}, status=401)
-
-    try:
-        token = header.split(' ')[1]  # Remove "Bearer " do início
-        validated_token = auth.get_validated_token(token)
-        user = auth.get_user(validated_token)  # Obtém o usuário do token
-    except Exception as e:
-        return JsonResponse({'error': 'Token inválido ou expirado'}, status=401)
-
+    valid, user = validate_request(request)
+    if not valid:
+        return user
     data = {
         'id': user.id,
         'name': user.get_full_name(),
         'email': user.email,
     }
 
+    return JsonResponse(data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def frequency_data(request):
+    valid, user = validate_request(request)
+    if not valid:
+        return user
+    data = {
+        'frequencies': [
+            {
+                'id': f.id,
+                'type': f.tipo,
+            } for f in FrequenciaAtualizacao.objects.all()
+        ]
+    }
     return JsonResponse(data)

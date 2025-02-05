@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import api from '../axiosConfig';
+import { Loader2 } from "lucide-react"
 
 const PrivateRoute = ({ element }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
@@ -31,7 +32,11 @@ const PrivateRoute = ({ element }) => {
   }, []);
 
   if (isAuthenticated === null) {
-    return <div>Carregando...</div>; // Componente de carregamento enquanto verifica
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="w-16 h-16 animate-spin text-gray-500" />
+      </div>
+    )
   }
 
   return isAuthenticated ? element : <Navigate to="/login" />;

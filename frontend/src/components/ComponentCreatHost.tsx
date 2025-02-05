@@ -13,13 +13,11 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react"
-
+import { MoreHorizontal } from "lucide-react"
 import { Button } from "./ui/button"
 import { Checkbox } from "./ui/checkbox"
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -45,13 +43,15 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import FrequencySelect from "./FrequencySelect" // ajuste o caminho se necessário
+export type Host = {
+  id: string
+  status: "ativo" | "inativo"
+  dominio: string
+  frequencia: string
+  ultimaVerificacao: string
+  nome: string
+}
 
 const data: Host[] = [
   {
@@ -60,13 +60,15 @@ const data: Host[] = [
     dominio: "example.com",
     frequencia: "de hora em hora",
     ultimaVerificacao: "2023-10-01 12:00",
+    nome: "Host de exemplo 1",
   },
   {
     id: "3u1reuv4",
     status: "inativo",
-    dominio: "test.com",
+    dominio: "10.5.2.87",
     frequencia: "diariamente",
     ultimaVerificacao: "2023-10-01 08:00",
+    nome: "Host de exemplo 2",
   },
   {
     id: "derv1ws0",
@@ -74,89 +76,48 @@ const data: Host[] = [
     dominio: "demo.com",
     frequencia: "semanalmente",
     ultimaVerificacao: "2023-09-30 10:00",
+    nome: "Host de exemplo 3",
   },
 ]
-
-export type Host = {
-  id: string
-  status: "ativo" | "inativo"
-  dominio: string
-  frequencia: "de hora em hora" | "diariamente" | "semanalmente"
-  ultimaVerificacao: string
-}
 
 export const columns: ColumnDef<Host>[] = [
   {
     id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
-    ),
     enableSorting: false,
     enableHiding: false,
   },
   {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("status")}</div>
-    ),
+    accessorKey: "nome",
+    header: "Nome",
+    cell: ({ row }) => <div>{row.getValue("nome")}</div>,
   },
   {
     accessorKey: "dominio",
-    header: "Domínio",
+    header: "Domínio/IP",
     cell: ({ row }) => <div>{row.getValue("dominio")}</div>,
   },
   {
     accessorKey: "frequencia",
     header: "Atualização do Host",
-    cell: ({ row }) => {
-      const frequencia = row.getValue("frequencia") as string
-      return (
-        <Select
-          value={frequencia}
-          onValueChange={(value) => {
-            row.original.frequencia = value as Host["frequencia"]
-          }}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Selecione a frequência" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="de hora em hora">De hora em hora</SelectItem>
-            <SelectItem value="diariamente">Diariamente</SelectItem>
-            <SelectItem value="semanalmente">Semanalmente</SelectItem>
-          </SelectContent>
-        </Select>
-      )
-    },
+    cell: ({ row }) => <div>{row.getValue("frequencia")}</div>,
   },
   {
     accessorKey: "ultimaVerificacao",
     header: "Última Atualização",
     cell: ({ row }) => <div>{row.getValue("ultimaVerificacao")}</div>,
-},
-{
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => <div className="capitalize">{row.getValue("status")}</div>,
+  },
+  {
     accessorKey: "actions",
     header: "Ação",
     id: "actions",
     enableHiding: false,
     cell: ({ row }) => {
       const host = row.original
-
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -166,15 +127,14 @@ export const columns: ColumnDef<Host>[] = [
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(host.id)}
-            >
-              Copy host ID
-            </DropdownMenuItem>
+            <DropdownMenuLabel>Ações</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>View details</DropdownMenuItem>
-            <DropdownMenuItem>Edit host</DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer">Editar Host</DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer">
+              <div className="hover:text-red-500 w-full">
+                Excluir Host
+              </div>
+              </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )
@@ -184,11 +144,8 @@ export const columns: ColumnDef<Host>[] = [
 
 export function ComponentCreateHost() {
   const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  )
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({})
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
 
   const table = useReactTable({
@@ -214,59 +171,55 @@ export function ComponentCreateHost() {
     <div className="w-full">
       <div className="flex items-center py-4">
         <Input
-          placeholder="Filter domains..."
-          value={(table.getColumn("dominio")?.getFilterValue() as string) ?? ""}
+          placeholder="Buscar pelo nome..."
+          value={(table.getColumn("nome")?.getFilterValue() as string) ?? ""}
           onChange={(event) =>
-            table.getColumn("dominio")?.setFilterValue(event.target.value)
+            table.getColumn("nome")?.setFilterValue(event.target.value)
           }
           className="max-w-sm"
         />
         <Dialog>
           <DialogTrigger asChild>
             <Button variant="outline" className="ml-auto">
-              Add Host
+              Adicionar novo Host
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[525px] flex flex-col w-full">
             <DialogHeader>
-              <DialogTitle>Add New Host</DialogTitle>
+              <DialogTitle>Adicionar Novo Host</DialogTitle>
               <DialogDescription>
-                Fill in the details below to add a new host for monitoring.
+                Preencha os dados abaixo para adicionar um novo host para monitoramento.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="dominio" className="text-right">
-                  Domínio
-                </Label>
-                <Input id="dominio" className="col-span-3" />
+            <div className="grid gap-3 py-4">
+              <div className="grid grid-cols-4 items-center gap-2">
+              <Label htmlFor="nome" className="col-span-1 text-left">
+                Nome:
+              </Label>
+              <Input id="nome" className="col-span-4" required/>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="status" className="text-right">
-                  Status
-                </Label>
-                <Input id="status" className="col-span-3" />
+
+              <div className="grid grid-cols-4 items-center gap-2">
+              <Label htmlFor="dominio" className="col-span-1 text-left">
+                Domínio/IP:
+              </Label>
+              <Input id="dominio" className="col-span-4" required/>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="frequencia" className="text-right">
-                  Atualização
-                </Label>
-                <Select>
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Selecione a frequência" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="de hora em hora">
-                      De hora em hora
-                    </SelectItem>
-                    <SelectItem value="diariamente">Diariamente</SelectItem>
-                    <SelectItem value="semanalmente">Semanalmente</SelectItem>
-                  </SelectContent>
-                </Select>
+
+              <div className="grid grid-cols-4 items-center gap-2">
+              <Label htmlFor="frequencia" className="col-span-1 text-left">
+                Atualização:
+              </Label>
+              <div className="col-span-4">
+                <FrequencySelect />
+              </div>
               </div>
             </div>
-            <DialogFooter>
-              <Button type="submit">Save changes</Button>
+            <DialogFooter className="col-span-4">
+              <DialogTrigger asChild>
+                <Button variant="outline">Cancelar</Button>
+              </DialogTrigger>
+              <Button type="submit">Salvar</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -276,45 +229,31 @@ export function ComponentCreateHost() {
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  )
-                })}
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
               </TableRow>
             ))}
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
+                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  No results.
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  sem resultados.
                 </TableCell>
               </TableRow>
             )}
@@ -322,26 +261,24 @@ export function ComponentCreateHost() {
         </Table>
       </div>
       <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
-        </div>
         <div className="space-x-2">
           <Button
+            className="cursor-pointer"
             variant="outline"
             size="sm"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
-            Previous
+            Anterior
           </Button>
           <Button
+            className="cursor-pointer"
             variant="outline"
             size="sm"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
-            Next
+            Próximo
           </Button>
         </div>
       </div>
