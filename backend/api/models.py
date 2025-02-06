@@ -17,9 +17,9 @@ class Host(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.CASCADE)
     status = models.BooleanField(default=True)
     nome = models.CharField(max_length=100)
-    host = models.CharField(max_length=100, unique=True)
-    frequencia_atualizacao = models.ForeignKey(FrequenciaAtualizacao, on_delete=models.CASCADE)  # Alterado aqui
+    host = models.CharField(max_length=100)
+    frequencia_atualizacao = models.ForeignKey(FrequenciaAtualizacao, on_delete=models.CASCADE)
     ultima_atualizacao = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.nome
+        return f"Host {self.nome} | Usuario {self.usuario.first_name}"

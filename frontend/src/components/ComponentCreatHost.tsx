@@ -16,6 +16,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
+import { MoreHorizontal } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 import { Button } from "./ui/button"
 import { Input } from "@/components/ui/input"
@@ -36,6 +37,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Label } from "@/components/ui/label"
 import FrequencySelect from "./FrequencySelect"
 
@@ -49,6 +58,11 @@ export type Host = {
 }
 
 export const columns: ColumnDef<Host>[] = [
+  {
+    id: "id",
+    enableSorting: false,
+    enableHiding: false,
+  },
   {
     accessorKey: "nome",
     header: "Nome",
@@ -74,7 +88,62 @@ export const columns: ColumnDef<Host>[] = [
     header: "Status",
     cell: ({ row }) => <div className="capitalize">{row.getValue("status")}</div>,
   },
+  {
+    accessorKey: "actions",
+    header: "Ação",
+    id: "actions",
+    enableHiding: false,
+    cell: ({ row }) => {
+      const host = row.original
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Ações</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="cursor-pointer">
+              Editar Host
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onClick={() => handleDeleteHost(host.id)}
+            >
+              <div className="hover:text-red-500 w-full">Excluir Host</div>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )
+    },
+  },
 ]
+
+// Função de exclusão do host (fora do componente para facilitar o uso no Dropdown)
+async function handleDeleteHost(hostId: string) {
+  if (!window.confirm("Tem certeza que deseja excluir este host?")) {
+    return
+  }
+  try {
+    await axios.delete(`http://localhost:8000/api/delete-host/${hostId}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+      },
+    })
+    toast.success("Host deletado com sucesso!")
+    // Recarrega a lista de hosts após a exclusão
+    // Como usamos fetchHosts dentro do componente, podemos disparar um evento customizado ou utilizar outro método.
+    // Aqui, vamos disparar um evento customizado que o componente pode ouvir:
+    window.dispatchEvent(new Event("hostsUpdated"))
+  } catch (error: any) {
+    toast.error("Erro ao deletar host", {
+      description: error.response?.data?.error || error.message,
+    })
+  }
+}
 
 export function ComponentCreateHost() {
   const [sorting, setSorting] = useState<SortingState>([])
@@ -103,7 +172,7 @@ export function ComponentCreateHost() {
         dominio: h.host,
         frequencia: h.frequency,
         ultimaVerificacao: h.last_update,
-        status: "True", // Ajuste conforme a lógica do seu backend
+        status: h.status.toString(),
       }))
       setHosts(transformedHosts)
       console.log("Hosts carregados com sucesso:", transformedHosts)
@@ -114,6 +183,10 @@ export function ComponentCreateHost() {
 
   useEffect(() => {
     fetchHosts()
+
+    // Ouve o evento customizado para atualizar a lista de hosts após exclusão
+    window.addEventListener("hostsUpdated", fetchHosts)
+    return () => window.removeEventListener("hostsUpdated", fetchHosts)
   }, [fetchHosts])
 
   // Função para lidar com o registro do host
@@ -123,7 +196,8 @@ export function ComponentCreateHost() {
 
     if (!nome.trim() || !host.trim() || !frequencia.trim()) {
       if (errorAlert) {
-        errorAlert.querySelector(".text-red-100")!.textContent = "Por favor, preencha todos os campos."
+        errorAlert.querySelector(".text-red-100")!.textContent =
+          "Por favor, preencha todos os campos."
         errorAlert.classList.remove("hidden")
       }
       return
@@ -254,7 +328,7 @@ export function ComponentCreateHost() {
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  Sem resultados.
+                  Sem hosts cadastrados.
                 </TableCell>
               </TableRow>
             )}

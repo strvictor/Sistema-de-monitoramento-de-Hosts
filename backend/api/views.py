@@ -158,8 +158,25 @@ def list_hosts(request):
                 'name': h.nome,
                 'host': h.host,
                 'frequency': h.frequencia_atualizacao.tipo,
+                'status': h.status,
                 'last_update': h.ultima_atualizacao.strftime('%d-%m-%Y %H:%M:%S') if h.ultima_atualizacao else None
             } for h in Host.objects.filter(usuario=user)
         ]
     }
     return JsonResponse(data)
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_host(request, host_id):
+    valid, user = validate_token(request)
+    if not valid:
+        return user
+
+    try:
+        host = Host.objects.get(id=host_id, usuario=user)
+        host.delete()
+        return JsonResponse({'success': 'Host excluído com sucesso!'}, status=200)
+    except Host.DoesNotExist:
+        return JsonResponse({'error': 'Host não encontrado.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': f'Ocorreu um erro ao excluir o host: {str(e)}'}, status=500)
