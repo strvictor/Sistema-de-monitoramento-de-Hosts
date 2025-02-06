@@ -6,7 +6,7 @@ from api.models import FrequenciaAtualizacao, Host
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
-import json
+import json, re
 
 def validate_token(request):
     auth = JWTAuthentication()
@@ -87,6 +87,7 @@ def frequency_data(request):
     }
     return JsonResponse(data)
 
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_host(request):
@@ -101,21 +102,63 @@ def create_host(request):
 
     # Extraindo e normalizando os dados
     nome = str(data.get('nome', '')).strip().title()
-    host = str(data.get('dominio', '')).strip()
+    raw_host = str(data.get('dominio', '')).strip()
     freq_tipo = data.get('frequencia', None)
 
     # Validação de campos obrigatórios
-    if not nome or not host or not freq_tipo:
+    if not nome or not raw_host or not freq_tipo:
         return JsonResponse({'error': 'Todos os campos (nome, Dominio e frequência) são obrigatórios.'}, status=400)
 
-    # Verificando se a frequência existe
+    # Limpeza do host
+    host = raw_host.lower()
+    if host.startswith(('http://', 'https://')):
+        host = host.split('://')[1]
+    if host.startswith('www.'):
+        host = host[4:]
+    host = host.rstrip('/').split('/')[0]
+
+    # Expressões regulares para validação
+    domain_regex = r'^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$'
+    ipv4_regex = r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
+
+    # Validação do host
+    is_valid_domain = re.fullmatch(domain_regex, host) is not None
+    is_valid_ip = re.fullmatch(ipv4_regex, host) is not None
+
+    if not (is_valid_domain or is_valid_ip):
+        return JsonResponse({'error': 'Host inválido. Deve ser um domínio válido ou IPv4.'}, status=400)
+
+    # Verificação da frequência
     if not FrequenciaAtualizacao.objects.filter(tipo=freq_tipo).exists():
         return JsonResponse({'error': 'Frequência de atualização não encontrada.'}, status=404)
 
-    # Criando o host
+    # Criação do host
     try:
         freq = FrequenciaAtualizacao.objects.get(tipo=freq_tipo)
-        Host.objects.create(nome=nome, host=host, frequencia_atualizacao=freq, usuario=retorno)
+        Host.objects.create(
+            nome=nome,
+            host=host,
+            frequencia_atualizacao=freq,
+            usuario=retorno
+        )
         return JsonResponse({'success': 'Host criado com sucesso!'}, status=201)
     except Exception as e:
         return JsonResponse({'error': f'Ocorreu um erro ao criar o host: {str(e)}'}, status=500)
+    
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_hosts(request):
+    valid, user = validate_token(request)
+    if not valid:
+        return user
+    data = {
+        'hosts': [
+            {
+                'id': h.id,
+                'name': h.nome,
+                'host': h.host,
+                'frequency': h.frequencia_atualizacao.tipo,
+            } for h in Host.objects.filter(usuario=user)
+        ]
+    }
+    return JsonResponse(data)

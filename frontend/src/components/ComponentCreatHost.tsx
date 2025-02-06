@@ -1,6 +1,9 @@
 "use client"
 
 import * as React from "react"
+import { useState } from "react"
+import axios from "axios"
+import { toast } from "sonner"
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -13,7 +16,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { MoreHorizontal } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 import { Button } from "./ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -35,8 +38,6 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import FrequencySelect from "./FrequencySelect"
-import axios from "axios";
-import { useState } from "react";
 
 export type Host = {
   id: string
@@ -171,7 +172,7 @@ export function ComponentCreateHost() {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = useState({})
-  const [dialogOpen, setDialogOpen] = useState(false) // Estado para controlar o diálogo
+  const [dialogOpen, setDialogOpen] = useState(false)
 
   // Estados do formulário
   const [nome, setNome] = useState("")
@@ -180,39 +181,46 @@ export function ComponentCreateHost() {
 
   // Função para lidar com o registro do host
   const handleRegister = async (event: React.FormEvent) => {
-    event.preventDefault(); // Previne o recarregamento da página
+    event.preventDefault()
+    const errorAlert = document.getElementById("card-error")
 
     if (!nome.trim() || !host.trim() || !frequencia.trim()) {
-      alert("Por favor, preencha todos os campos.");
-      return;
+      if (errorAlert) {
+        errorAlert.querySelector(".text-red-100")!.textContent = "Por favor, preencha todos os campos."
+        errorAlert.classList.remove("hidden")
+      }
+      return
     }
 
     try {
       const data = { nome, dominio: host, frequencia }
 
-      const response = await axios.post(
-        "http://localhost:8000/api/create-host/",
-        data,
-        {
-          headers: {
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        }
-      )
+      const response = await axios.post("http://localhost:8000/api/create-host/", data, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      })
 
       console.log("Host registrado com sucesso:", response.data)
-      alert("Host criado com sucesso!")
 
-      // Limpa os campos do formulário após o envio
+      // Exibe o toast de sucesso somente quando o host for cadastrado
+      toast.success("Host registrado com sucesso!", {
+        description: `O host ${nome} foi adicionado com sucesso.`,
+      })
+
+      // Limpa os campos do formulário
       setNome("")
       setHost("")
       setFrequencia("")
 
-      // Fecha o diálogo após o envio
+      // Fecha o diálogo
       setDialogOpen(false)
     } catch (error: any) {
       console.error("Erro ao registrar o host:", error.response?.data || error.message)
-      alert("Erro ao criar host!")
+      if (errorAlert) {
+        errorAlert.querySelector(".text-red-100")!.textContent = error.response.data.error
+        errorAlert.classList.remove("hidden")
+      }
     }
   }
 
@@ -252,6 +260,14 @@ export function ComponentCreateHost() {
           </DialogTrigger>
           <DialogContent className="sm:max-w-[525px]">
             <DialogHeader>
+              <Alert id="card-error" className="mb-4 mt-4 hidden">
+                <AlertTitle className="text-red-400">
+                  Ops, tivemos um problema!
+                </AlertTitle>
+                <AlertDescription className="text-red-100">
+                  E-mail ou senha inválidos.
+                </AlertDescription>
+              </Alert>
               <DialogTitle>Adicionar Novo Host</DialogTitle>
               <DialogDescription>
                 Preencha os dados abaixo para adicionar um novo host para monitoramento.
@@ -260,15 +276,14 @@ export function ComponentCreateHost() {
             <form onSubmit={handleRegister} className="grid gap-3 py-4">
               <Label>Nome:</Label>
               <Input value={nome} onChange={(e) => setNome(e.target.value)} />
-
               <Label>Domínio/IP:</Label>
               <Input value={host} onChange={(e) => setHost(e.target.value)} />
-
               <Label>Atualização:</Label>
               <FrequencySelect value={frequencia} onValueChange={setFrequencia} />
-
               <DialogFooter>
-                <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
+                <DialogTrigger asChild>
+                  <Button variant="outline">Cancelar</Button>
+                </DialogTrigger>
                 <Button type="submit">Salvar</Button>
               </DialogFooter>
             </form>
@@ -294,12 +309,18 @@ export function ComponentCreateHost() {
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
-              <TableRow><TableCell colSpan={columns.length} className="h-24 text-center">Sem resultados.</TableCell></TableRow>
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  Sem resultados.
+                </TableCell>
+              </TableRow>
             )}
           </TableBody>
         </Table>
