@@ -9,5 +9,6 @@ urlpatterns = [
     path('create-account/', create_account, name='create-account'),
     path('user-data/', get_user_data, name='get_user_data'),
     path('frequency-data/', frequency_data, name='frequency-data'),
+    path('create-host/', create_host, name='create-host'),
 
 ]

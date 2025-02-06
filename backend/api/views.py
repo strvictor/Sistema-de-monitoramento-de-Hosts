@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 import json
 
-def validate_request(request):
+def validate_token(request):
     auth = JWTAuthentication()
     header = request.headers.get('Authorization')
 
@@ -58,9 +58,9 @@ def create_account(request):
     return JsonResponse({'error': 'Método não permitido. Use POST.'}, status=405)
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])  # Garante que apenas usuários autenticados acessem
+@permission_classes([IsAuthenticated])  
 def get_user_data(request):
-    valid, user = validate_request(request)
+    valid, user = validate_token(request)
     if not valid:
         return user
     data = {
@@ -74,7 +74,7 @@ def get_user_data(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def frequency_data(request):
-    valid, user = validate_request(request)
+    valid, user = validate_token(request)
     if not valid:
         return user
     data = {
@@ -86,3 +86,36 @@ def frequency_data(request):
         ]
     }
     return JsonResponse(data)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_host(request):
+    valid, retorno = validate_token(request)
+    if not valid:
+        return retorno
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Dados inválidos, não foi possível processar o JSON.'}, status=400)
+
+    # Extraindo e normalizando os dados
+    nome = str(data.get('nome', '')).strip().title()
+    host = str(data.get('dominio', '')).strip()
+    freq_tipo = data.get('frequencia', None)
+
+    # Validação de campos obrigatórios
+    if not nome or not host or not freq_tipo:
+        return JsonResponse({'error': 'Todos os campos (nome, Dominio e frequência) são obrigatórios.'}, status=400)
+
+    # Verificando se a frequência existe
+    if not FrequenciaAtualizacao.objects.filter(tipo=freq_tipo).exists():
+        return JsonResponse({'error': 'Frequência de atualização não encontrada.'}, status=404)
+
+    # Criando o host
+    try:
+        freq = FrequenciaAtualizacao.objects.get(tipo=freq_tipo)
+        Host.objects.create(nome=nome, host=host, frequencia_atualizacao=freq, usuario=retorno)
+        return JsonResponse({'success': 'Host criado com sucesso!'}, status=201)
+    except Exception as e:
+        return JsonResponse({'error': f'Ocorreu um erro ao criar o host: {str(e)}'}, status=500)

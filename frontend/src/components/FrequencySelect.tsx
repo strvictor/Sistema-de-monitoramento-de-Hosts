@@ -16,8 +16,8 @@ type Frequency = {
 }
 
 type FrequencySelectProps = {
-  value?: string
-  onValueChange?: (value: string) => void
+  value: string // Agora é obrigatório para evitar valores indefinidos
+  onValueChange: (value: string) => void // Agora é obrigatório
 }
 
 const FrequencySelect: React.FC<FrequencySelectProps> = ({ value, onValueChange }) => {

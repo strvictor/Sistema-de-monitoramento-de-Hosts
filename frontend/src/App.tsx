@@ -17,7 +17,6 @@ function App() {
               </div>
             } 
           />
-          {/* Proteger a rota Dashboard */}
           <Route 
             path="/dashboard" 
             element={<PrivateRoute element={<Dashboard />} />} 
