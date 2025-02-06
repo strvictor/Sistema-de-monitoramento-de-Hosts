@@ -106,7 +106,14 @@ export const columns: ColumnDef<Host>[] = [
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Ações</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer">
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onClick={() =>
+                window.dispatchEvent(
+                  new CustomEvent("editHost", { detail: host })
+                )
+              }
+            >
               Editar Host
             </DropdownMenuItem>
             <DropdownMenuItem
@@ -122,7 +129,6 @@ export const columns: ColumnDef<Host>[] = [
   },
 ]
 
-// Função de exclusão do host (fora do componente para facilitar o uso no Dropdown)
 async function handleDeleteHost(hostId: string) {
   if (!window.confirm("Tem certeza que deseja excluir este host?")) {
     return
@@ -134,9 +140,6 @@ async function handleDeleteHost(hostId: string) {
       },
     })
     toast.success("Host deletado com sucesso!")
-    // Recarrega a lista de hosts após a exclusão
-    // Como usamos fetchHosts dentro do componente, podemos disparar um evento customizado ou utilizar outro método.
-    // Aqui, vamos disparar um evento customizado que o componente pode ouvir:
     window.dispatchEvent(new Event("hostsUpdated"))
   } catch (error: any) {
     toast.error("Erro ao deletar host", {
@@ -157,6 +160,9 @@ export function ComponentCreateHost() {
   const [nome, setNome] = useState("")
   const [host, setHost] = useState("")
   const [frequencia, setFrequencia] = useState("")
+
+  // Estado para controle de edição
+  const [editingHost, setEditingHost] = useState<Host | null>(null)
 
   // Função para buscar hosts no backend
   const fetchHosts = useCallback(async () => {
@@ -183,13 +189,29 @@ export function ComponentCreateHost() {
 
   useEffect(() => {
     fetchHosts()
-
-    // Ouve o evento customizado para atualizar a lista de hosts após exclusão
     window.addEventListener("hostsUpdated", fetchHosts)
     return () => window.removeEventListener("hostsUpdated", fetchHosts)
   }, [fetchHosts])
 
-  // Função para lidar com o registro do host
+  // Ouvindo o evento customizado "editHost" para abrir o modal de edição
+  useEffect(() => {
+    const editListener = (e: CustomEvent) => {
+      handleEditHost(e.detail)
+    }
+    window.addEventListener("editHost", editListener as EventListener)
+    return () => window.removeEventListener("editHost", editListener as EventListener)
+  }, [])
+
+  // Função para iniciar a edição de um host: preenche os campos e abre o modal
+  const handleEditHost = (hostData: Host) => {
+    setEditingHost(hostData)
+    setNome(hostData.nome)
+    setHost(hostData.dominio)
+    setFrequencia(hostData.frequencia)
+    setDialogOpen(true)
+  }
+
+  // Função para lidar com o registro ou atualização do host
   const handleRegister = async (event: React.FormEvent) => {
     event.preventDefault()
     const errorAlert = document.getElementById("card-error")
@@ -206,16 +228,32 @@ export function ComponentCreateHost() {
     try {
       const data = { nome, dominio: host, frequencia }
 
-      const response = await axios.post("http://localhost:8000/api/create-host/", data, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      })
-
-      console.log("Host registrado com sucesso:", response.data)
-      toast.success("Host registrado com sucesso!", {
-        description: `O host ${nome} foi adicionado com sucesso.`,
-      })
+      if (editingHost) {
+        // Atualização do host
+        await axios.put(
+          `http://localhost:8000/api/update-host/${editingHost.id}`,
+          data,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+            },
+          }
+        )
+        toast.success("Host atualizado com sucesso!", {
+          description: `O host ${nome} foi atualizado com sucesso.`,
+        })
+        setEditingHost(null)
+      } else {
+        // Criação do host
+        await axios.post("http://localhost:8000/api/create-host/", data, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        })
+        toast.success("Host registrado com sucesso!", {
+          description: `O host ${nome} foi adicionado com sucesso.`,
+        })
+      }
 
       // Limpa os campos do formulário e fecha o diálogo
       setNome("")
@@ -226,7 +264,7 @@ export function ComponentCreateHost() {
       // Re-fetch os hosts para atualizar a tabela
       fetchHosts()
     } catch (error: any) {
-      console.error("Erro ao registrar o host:", error.response?.data || error.message)
+      console.error("Erro ao registrar/atualizar o host:", error.response?.data || error.message)
       if (errorAlert) {
         errorAlert.querySelector(".text-red-100")!.textContent = error.response.data.error
         errorAlert.classList.remove("hidden")
@@ -265,7 +303,7 @@ export function ComponentCreateHost() {
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button variant="outline" className="ml-auto">
-              Adicionar novo Host
+              {editingHost ? "Editar Host" : "Adicionar novo Host"}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[525px]">
@@ -278,9 +316,13 @@ export function ComponentCreateHost() {
                   E-mail ou senha inválidos.
                 </AlertDescription>
               </Alert>
-              <DialogTitle>Adicionar Novo Host</DialogTitle>
+              <DialogTitle>
+                {editingHost ? "Editar Host" : "Adicionar Novo Host"}
+              </DialogTitle>
               <DialogDescription>
-                Preencha os dados abaixo para adicionar um novo host para monitoramento.
+                {editingHost
+                  ? "Altere os dados para atualizar o host."
+                  : "Preencha os dados abaixo para adicionar um novo host para monitoramento."}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleRegister} className="grid gap-3 py-4">
@@ -308,7 +350,9 @@ export function ComponentCreateHost() {
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <TableHead key={header.id}>
-                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
               </TableRow>

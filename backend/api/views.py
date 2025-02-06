@@ -180,3 +180,37 @@ def delete_host(request, host_id):
         return JsonResponse({'error': 'Host não encontrado.'}, status=404)
     except Exception as e:
         return JsonResponse({'error': f'Ocorreu um erro ao excluir o host: {str(e)}'}, status=500)
+    
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_host(request, host_id):
+    valid, user = validate_token(request)
+    if not valid:
+        return user
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Dados inválidos, não foi possível processar o JSON.'}, status=400)
+
+    # Extraindo e normalizando os dados
+    nome = str(data.get('nome', '')).strip().title()
+    host_r = str(data.get('dominio', '')).strip()
+    freq_tipo = data.get('frequencia', None)
+
+    # Validação de campos obrigatórios
+    if not nome or not host_r or not freq_tipo:
+        return JsonResponse({'error': 'Todos os campos (nome, dominio, host e frequencia) são obrigatórios.'}, status=400)
+    
+    try:
+        host = Host.objects.get(id=host_id, usuario=user)
+        
+        host.nome = nome
+        host.host = host_r
+        host.frequencia_atualizacao = FrequenciaAtualizacao.objects.get(tipo=freq_tipo)
+        host.save()
+        return JsonResponse({'success': 'Host atualizado com sucesso!'}, status=200)
+    except Host.DoesNotExist:
+        return JsonResponse({'error': 'Host não encontrado.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': f'Ocorreu um erro ao editar o host: {str(e)}'}, status=500)
