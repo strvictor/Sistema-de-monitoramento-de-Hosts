@@ -158,6 +158,7 @@ def list_hosts(request):
                 'name': h.nome,
                 'host': h.host,
                 'frequency': h.frequencia_atualizacao.tipo,
+                'last_update': h.ultima_atualizacao.strftime('%d-%m-%Y %H:%M:%S') if h.ultima_atualizacao else None
             } for h in Host.objects.filter(usuario=user)
         ]
     }

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import axios from "axios"
 import { toast } from "sonner"
 import {
@@ -48,97 +48,6 @@ export type Host = {
   nome: string
 }
 
-const data: Host[] = [
-  {
-    id: "m5gr84i9",
-    status: "True",
-    dominio: "example.com",
-    frequencia: "de hora em hora",
-    ultimaVerificacao: "2023-10-01 12:00",
-    nome: "Host de exemplo 1",
-  },
-  {
-    id: "3u1reuv4",
-    status: "False",
-    dominio: "10.5.2.87",
-    frequencia: "diariamente",
-    ultimaVerificacao: "2023-10-01 08:00",
-    nome: "Host de exemplo 2",
-  },
-  {
-    id: "3u1reuv4",
-    status: "False",
-    dominio: "10.5.2.87",
-    frequencia: "diariamente",
-    ultimaVerificacao: "2023-10-01 08:00",
-    nome: "Host de exemplo 2",
-  },
-  {
-    id: "3u1reuv4",
-    status: "False",
-    dominio: "10.5.2.87",
-    frequencia: "diariamente",
-    ultimaVerificacao: "2023-10-01 08:00",
-    nome: "Host de exemplo 2",
-  },
-  {
-    id: "3u1reuv4",
-    status: "False",
-    dominio: "10.5.2.87",
-    frequencia: "diariamente",
-    ultimaVerificacao: "2023-10-01 08:00",
-    nome: "Host de exemplo 2",
-  },
-  {
-    id: "3u1reuv4",
-    status: "False",
-    dominio: "10.5.2.87",
-    frequencia: "diariamente",
-    ultimaVerificacao: "2023-10-01 08:00",
-    nome: "Host de exemplo 2",
-  },
-  {
-    id: "3u1reuv4",
-    status: "False",
-    dominio: "10.5.2.87",
-    frequencia: "diariamente",
-    ultimaVerificacao: "2023-10-01 08:00",
-    nome: "Host de exemplo 2",
-  },
-  {
-    id: "3u1reuv4",
-    status: "False",
-    dominio: "10.5.2.87",
-    frequencia: "diariamente",
-    ultimaVerificacao: "2023-10-01 08:00",
-    nome: "Host de exemplo 2",
-  },
-  {
-    id: "3u1reuv4",
-    status: "False",
-    dominio: "10.5.2.87",
-    frequencia: "diariamente",
-    ultimaVerificacao: "2023-10-01 08:00",
-    nome: "Host de exemplo 2",
-  },
-  {
-    id: "3u1reuv4",
-    status: "False",
-    dominio: "10.5.2.87",
-    frequencia: "diariamente",
-    ultimaVerificacao: "2023-10-01 08:00",
-    nome: "Host de exemplo 2",
-  },
-  {
-    id: "3u1reuv4",
-    status: "False",
-    dominio: "10.5.2.87",
-    frequencia: "diariamente",
-    ultimaVerificacao: "2023-10-01 08:00",
-    nome: "Host de exemplo 2",
-  },
-]
-
 export const columns: ColumnDef<Host>[] = [
   {
     accessorKey: "nome",
@@ -173,11 +82,39 @@ export function ComponentCreateHost() {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = useState({})
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [hosts, setHosts] = useState<Host[]>([])
 
   // Estados do formulário
   const [nome, setNome] = useState("")
   const [host, setHost] = useState("")
   const [frequencia, setFrequencia] = useState("")
+
+  // Função para buscar hosts no backend
+  const fetchHosts = useCallback(async () => {
+    try {
+      const response = await axios.get("http://localhost:8000/api/list-hosts/", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      })
+      const transformedHosts = response.data.hosts.map((h: any) => ({
+        id: h.id.toString(),
+        nome: h.name,
+        dominio: h.host,
+        frequencia: h.frequency,
+        ultimaVerificacao: h.last_update,
+        status: "True", // Ajuste conforme a lógica do seu backend
+      }))
+      setHosts(transformedHosts)
+      console.log("Hosts carregados com sucesso:", transformedHosts)
+    } catch (error) {
+      console.error("Erro ao buscar hosts", error)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchHosts()
+  }, [fetchHosts])
 
   // Função para lidar com o registro do host
   const handleRegister = async (event: React.FormEvent) => {
@@ -202,19 +139,18 @@ export function ComponentCreateHost() {
       })
 
       console.log("Host registrado com sucesso:", response.data)
-
-      // Exibe o toast de sucesso somente quando o host for cadastrado
       toast.success("Host registrado com sucesso!", {
         description: `O host ${nome} foi adicionado com sucesso.`,
       })
 
-      // Limpa os campos do formulário
+      // Limpa os campos do formulário e fecha o diálogo
       setNome("")
       setHost("")
       setFrequencia("")
-
-      // Fecha o diálogo
       setDialogOpen(false)
+
+      // Re-fetch os hosts para atualizar a tabela
+      fetchHosts()
     } catch (error: any) {
       console.error("Erro ao registrar o host:", error.response?.data || error.message)
       if (errorAlert) {
@@ -225,7 +161,7 @@ export function ComponentCreateHost() {
   }
 
   const table = useReactTable({
-    data,
+    data: hosts,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
