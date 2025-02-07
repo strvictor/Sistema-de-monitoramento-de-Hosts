@@ -214,3 +214,70 @@ def update_host(request, host_id):
         return JsonResponse({'error': 'Host não encontrado.'}, status=404)
     except Exception as e:
         return JsonResponse({'error': f'Ocorreu um erro ao editar o host: {str(e)}'}, status=500)
+    
+    
+    
+import json
+import socket, ssl
+from OpenSSL import crypto
+from ping3 import ping
+import requests
+
+from django.core import serializers
+from django.http import JsonResponse
+from rest_framework.decorators import api_view
+from api.models import Host  # ajuste conforme sua estrutura
+
+def get_certificate_info(host, port=443):
+    """
+    Conecta via SSL e extrai datas de validade do certificado.
+    Retorna um dicionário com as datas ou um erro.
+    """
+    try:
+        context = ssl.create_default_context()
+        conn = context.wrap_socket(socket.socket(socket.AF_INET), server_hostname=host)
+        conn.settimeout(5)
+        conn.connect((host, port))
+        der_cert = conn.getpeercert(binary_form=True)
+        conn.close()
+        cert = crypto.load_certificate(crypto.FILETYPE_ASN1, der_cert)
+        not_before = cert.get_notBefore().decode('utf-8')
+        not_after = cert.get_notAfter().decode('utf-8')
+        return {"not_before": not_before, "not_after": not_after}
+    except Exception as e:
+        return {"error": str(e)}
+
+@api_view(['GET'])
+def test(request):
+    hosts = Host.objects.all()
+    json_formatado = json.loads(serializers.serialize('json', hosts))
+    
+    for host_obj in json_formatado:
+        fields = host_obj['fields']
+        # Supondo que no seu modelo o campo seja "host" (endereço do host)
+        host_address = fields.get('host')
+        
+        # Coleta do status HTTP
+        try:
+            resp = requests.get(f'https://{host_address}', timeout=5)
+            status_http = resp.status_code
+        except Exception as e:
+            status_http = "Error"
+        
+        # Cálculo da latência média a partir de 5 pings (em ms)
+        latencies = []
+        for _ in range(5):
+            r = ping(host_address, unit='ms')
+            if r is not None:
+                latencies.append(r)
+        avg_latency = sum(latencies)/len(latencies) if latencies else None
+        
+        # Coleta de informações do certificado SSL
+        cert_info = get_certificate_info(host_address)
+        
+        # Acrescenta os dados de métricas aos campos
+        fields['status_http'] = status_http
+        fields['avg_latency'] = avg_latency
+        fields['cert_info'] = cert_info
+
+    return JsonResponse(json_formatado, safe=False)
