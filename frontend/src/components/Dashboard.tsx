@@ -14,6 +14,23 @@ import {
   SidebarTrigger,
 } from "./ui/sidebar"
 
+import * as React from "react"
+
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { motion } from 'framer-motion'
+
+
+import { Chart1 } from "../components/charts/Chat1"
+import { Chart2 } from "./charts/Chat2"
+import { Chart3 } from "./charts/Chart3"
 export default function Dashboard() {
   return (
     <SidebarProvider>
@@ -41,7 +58,47 @@ export default function Dashboard() {
         </header>
         <div className="flex flex-1 flex-col p-4 pt-0">
           <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min p-4">
-          <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Suscipit officiis laudantium perspiciatis facere harum ea ipsam tenetur assumenda deleniti voluptatem, magni magnam esse saepe odit, veritatis architecto quasi aliquid dignissimos.</p>
+          <div className="flex items-center justify-between pb-4">
+
+            <motion.p
+              className="text-sm font-bold"
+              animate={{
+                color: ['#93c5fd', '#6ee7b7', '#fca5a5']
+              }}
+              transition={{
+                duration: 6,
+                repeat: Infinity,
+                ease: 'easeInOut'
+              }}
+            >
+              Escolha um host para monitoramento inteligente e análise preditiva
+            </motion.p>
+
+            <Select>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Selecione o seu Host" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Hosts</SelectLabel>
+                  <SelectItem className="cursor-pointer" value="apple">Mercado Livre</SelectItem>
+                  <SelectItem className="cursor-pointer" value="banana">Facebook</SelectItem>
+                  <SelectItem className="cursor-pointer" value="blueberry">Instagram</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-full grid grid-cols-2 justify-center gap-4 pb-4 align-center">
+            <div>
+              <Chart1 />
+            </div>
+            <div>
+              <Chart2 />
+            </div>
+          </div>
+          <div>
+            < Chart3 />
+          </div>
           </div>
         </div>
       </SidebarInset>
