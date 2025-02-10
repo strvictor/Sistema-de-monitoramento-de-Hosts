@@ -6,7 +6,27 @@ from api.models import FrequenciaAtualizacao, Host
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
-import json, re
+import json, re, time
+
+
+import asyncio
+from playwright.async_api import async_playwright
+
+async def measure_load_time(url):
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+        
+        start_time = asyncio.get_event_loop().time()
+        await page.goto(url)
+        end_time = asyncio.get_event_loop().time()
+        
+        load_time = end_time - start_time
+        await browser.close()
+        
+        return f"{load_time:.2f}"
+
+
 
 def validate_token(request):
     auth = JWTAuthentication()
@@ -259,8 +279,14 @@ def test(request):
         
         # Coleta do status HTTP
         try:
-            resp = requests.get(f'https://{host_address}', timeout=5)
+            url = f'https://{host_address}'
+    
+            resp = requests.get(url, timeout=5)
             status_http = resp.status_code
+            
+            # Cálculo do tempo de carregamento da página (em segundos)  
+            load_time = asyncio.run(measure_load_time(url))
+            
         except Exception as e:
             status_http = "Error"
         
@@ -275,9 +301,15 @@ def test(request):
         # Coleta de informações do certificado SSL
         cert_info = get_certificate_info(host_address)
         
+        avg_latency = f'{avg_latency:.2f}' if isinstance(avg_latency, float) else avg_latency
         # Acrescenta os dados de métricas aos campos
         fields['status_http'] = status_http
-        fields['avg_latency'] = avg_latency
+        fields['avg_latency'] = avg_latency + 'ms'
+        fields['load_time'] = load_time + 's'
         fields['cert_info'] = cert_info
 
     return JsonResponse(json_formatado, safe=False)
+
+
+
+
