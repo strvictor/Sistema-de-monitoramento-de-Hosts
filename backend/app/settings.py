@@ -125,6 +125,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # URL do seu frontend
+    "https://f0d7-181-232-218-100.ngrok-free.app",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -144,6 +145,7 @@ AUTHENTICATION_BACKENDS = [
 
 
 from datetime import timedelta
+import os
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=1000),
@@ -151,3 +153,8 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
 }
+
+# Configuração do Celery para usar RabbitMQ como broker
+CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'

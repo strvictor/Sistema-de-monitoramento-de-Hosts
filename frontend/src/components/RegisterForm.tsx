@@ -52,7 +52,7 @@ export function RegisterForm() {
       console.error("Erro ao registrar o usuário:", error.response?.data || error.message);
       setAlert({
         type: "error",
-        message: error.response?.data?.error || "Erro desconhecido. Tente novamente.",
+        message: error.response?.data?.error || error.response?.data,
       });
       setTimeout(() => setAlert({ type: "", message: "" }), 8000);
     }
