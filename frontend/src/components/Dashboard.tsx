@@ -4,7 +4,6 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
-  BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { Separator } from "./ui/separator"
@@ -13,8 +12,6 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "./ui/sidebar"
-
-import * as React from "react"
 
 import {
   Select,

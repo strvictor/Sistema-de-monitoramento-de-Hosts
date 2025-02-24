@@ -1,5 +1,6 @@
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -70,13 +71,24 @@ WSGI_APPLICATION = 'app.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if DEBUG:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('POSTGRES_DB'),
+            'USER': os.getenv('POSTGRES_USER'),
+            'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
+            'HOST': os.getenv('DB_HOST'),
+            'PORT': '5432',
+        }
+    }
 
 
 # Password validation
@@ -124,8 +136,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # URL do seu frontend
-    "https://f0d7-181-232-218-100.ngrok-free.app",
+    "http://localhost:3000",  # URL do seu frontend
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -155,6 +166,5 @@ SIMPLE_JWT = {
 }
 
 # Configuração do Celery para usar RabbitMQ como broker
-CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'
-CELERY_ACCEPT_CONTENT = ['json']
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL')
 CELERY_TASK_SERIALIZER = 'json'

@@ -11,6 +11,5 @@ export default defineConfig({
   },
   server: {
     host: true, // Permite que o Vite rode em rede local
-    allowedHosts: ["f0d7-181-232-218-100.ngrok-free.app"] // Adiciona o domínio do Ngrok
   }
 })

@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import api from '../axiosConfig';
 import { Loader2 } from "lucide-react"
 
-const PrivateRoute = ({ element }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(null);
+const PrivateRoute = ({ element }: { element: JSX.Element }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -12,13 +12,10 @@ const PrivateRoute = ({ element }) => {
       if (token) {
         console.log('Token encontrado:', token);
         try {
-          // Enviando o token no corpo da requisição
-          await api.post('token/verify/', {
-            token: token, // Envia o token no payload
-          });
+          await api.post('token/verify/', { token });
           console.log('Token válido');
           setIsAuthenticated(true);
-        } catch (error) {
+        } catch (error: any) {
           console.error('Token inválido ou expirado:', error.response?.data || error.message);
           setIsAuthenticated(false);
         }
