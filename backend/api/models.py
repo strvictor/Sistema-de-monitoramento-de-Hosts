@@ -3,6 +3,9 @@ from django.contrib.auth.models import User
 
 class FrequenciaAtualizacao(models.Model):
     TIPOS_FREQUENCIA = (
+        ('A cada 2 Minutos', 'A cada 2 Minutos'),
+        ('A cada 10 Minutos', 'A cada 10 Minutos'),
+        ('A cada 30 Minutos', 'A cada 30 Minutos'),
         ('A cada Hora', 'A cada Hora'),
         ('Todos os dias', 'Todos os dias'),
         ('Semanalmente', 'Semanalmente'),

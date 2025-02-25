@@ -25,6 +25,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
+    "django_celery_beat",
+    "django_celery_results",
 
     'django.contrib.admin',
     'django.contrib.auth',
@@ -167,4 +169,8 @@ SIMPLE_JWT = {
 
 # Configuração do Celery para usar RabbitMQ como broker
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL')
-CELERY_TASK_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+
+CELERY_RESULT_BACKEND = "django-db"  # Salva resultados no banco de dados
+CELERY_CACHE_BACKEND = "django-cache"  # Usa cache do Django para os resultados

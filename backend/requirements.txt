@@ -38,3 +38,5 @@ urllib3==2.3.0
 vine==5.1.0
 wcwidth==0.2.13
 psycopg2-binary==2.9.10
+django-celery-beat==2.7.0
+django-celery-results==2.5.1

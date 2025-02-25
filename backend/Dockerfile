@@ -11,6 +11,8 @@ WORKDIR /app
 COPY backend/requirements.txt .
 
 RUN pip install --upgrade pip && pip install -r requirements.txt
+RUN pip install playwright \
+    && playwright install --with-deps chromium
 
 # Copie o restante do código
 COPY backend/ .

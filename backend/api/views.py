@@ -6,7 +6,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 import json, re
-
+from django_celery_beat.models import PeriodicTask, IntervalSchedule
+import json 
 
 def validate_token(request):
     auth = JWTAuthentication()
@@ -135,11 +136,40 @@ def create_host(request):
     # Criação do host
     try:
         freq = FrequenciaAtualizacao.objects.get(tipo=freq_tipo)
-        Host.objects.create(
+        host_created = Host.objects.create(
             nome=nome,
             host=host,
             frequencia_atualizacao=freq,
             usuario=retorno
+        )
+        
+        frequency_map = {
+            "A cada 2 Minutos": (2, IntervalSchedule.MINUTES),
+            "A cada 10 Minutos": (10, IntervalSchedule.MINUTES),
+            "A cada 30 Minutos": (30, IntervalSchedule.MINUTES),
+            "A cada Hora": (1, IntervalSchedule.HOURS),
+            "Todos os dias": (1, IntervalSchedule.DAYS),
+            "Semanalmente": (7, IntervalSchedule.DAYS),
+            "Mensalmente": (30, IntervalSchedule.DAYS),
+        }
+
+        every, period = frequency_map.get(freq_tipo, (1, IntervalSchedule.HOURS))
+        
+        schedule, _ = IntervalSchedule.objects.get_or_create(
+            every=every,
+            period=period,
+        )
+        # Criar ou atualizar uma tarefa periódica
+        task_name = f"{host_created.nome} - {host_created.usuario}"
+        
+        periodic_task, created = PeriodicTask.objects.update_or_create(
+            name=task_name,
+            defaults={
+                "interval": schedule,
+                "task": "api.tasks.atualiza_host",
+                "args": json.dumps([host_created.id]),
+                "kwargs": json.dumps({}),
+            }
         )
         return JsonResponse({'success': 'Host criado com sucesso!'}, status=201)
     except Exception as e:
@@ -164,6 +194,7 @@ def list_hosts(request):
             } for h in Host.objects.filter(usuario=user)
         ]
     }
+
     return JsonResponse(data)
 
 @api_view(['DELETE'])
@@ -217,5 +248,126 @@ def update_host(request, host_id):
         return JsonResponse({'error': f'Ocorreu um erro ao editar o host: {str(e)}'}, status=500)
 
 
+
+
+import asyncio
+import json
+import socket
+import ssl
+from datetime import datetime
+from functools import lru_cache
+
+from OpenSSL import crypto
+from ping3 import ping
+import requests
+from django.core import serializers
+from django.http import JsonResponse
+from rest_framework.decorators import api_view
+from api.models import Host
+from playwright.async_api import async_playwright
+
+
+async def measure_load_time(url):
+    """
+    Mede o tempo de carregamento da página usando Playwright.
+    """
+    try:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            page = await browser.new_page()
+
+            start_time = asyncio.get_event_loop().time()
+            await page.goto(url)  # Timeout de 10s
+            end_time = asyncio.get_event_loop().time()
+
+            await browser.close()
+            return f"{(end_time - start_time):.3f}s"
+    except Exception as e:
+        return f"N/A: {str(e)}"
+
+
+@lru_cache(maxsize=100)  # Cache para evitar múltiplas consultas ao mesmo host
+def get_certificate_info(host, port=443):
+    """
+    Obtém as datas de validade do certificado SSL do host.
+    Retorna um dicionário com:
+    - Data de início (`not_before`)
+    - Data de expiração (`not_after`)
+    - Status do certificado (`valid` ou `expired`)
+    """
+    try:
+        context = ssl.create_default_context()
+        with context.wrap_socket(socket.socket(socket.AF_INET), server_hostname=host) as conn:
+            conn.settimeout(5)
+            conn.connect((host, port))
+            cert = crypto.load_certificate(crypto.FILETYPE_ASN1, conn.getpeercert(binary_form=True))
+
+        not_before = datetime.strptime(cert.get_notBefore().decode("utf-8"), "%Y%m%d%H%M%SZ")
+        not_after = datetime.strptime(cert.get_notAfter().decode("utf-8"), "%Y%m%d%H%M%SZ")
+
+        status = "valid" if datetime.utcnow() < not_after else "expired"
+
+        return {
+            "not_before": not_before.strftime("%Y-%m-%d %H:%M:%S"),
+            "not_after": not_after.strftime("%Y-%m-%d %H:%M:%S"),
+            "status": status,
+        }
+    except Exception as e:
+        return {"error": str(e).split(']')[0].replace('[', '').split(':')[1].strip()}
+
+
+def get_http_status_and_latency(host):
+    """
+    Obtém o status HTTP e a latência média (ping) de um host.
+    Retorna um dicionário com os dados coletados.
+    """
+    result = {"status_http": "Error", "avg_latency": "N/A"}
+
+    try:
+        url = f"https://{host}"
+        resp = requests.get(url, timeout=5)
+        result["status_http"] = resp.status_code
+    except requests.RequestException:
+        pass  # Mantém "Error" no status HTTP
+
+    # Mede latência média com 5 pings
+    latencies = [ping(host, unit="ms") for _ in range(5)]
+    latencies = [lat for lat in latencies if lat is not None]  # Remove None
+
+    if latencies:
+        result["avg_latency"] = f"{(sum(latencies) / len(latencies)):.2f}ms"
+
+    return result
+
+
+@api_view(["GET"])
 def test(request):
-    return JsonResponse({'teste': '1'})
+    """
+    Retorna informações sobre os hosts cadastrados, incluindo:
+    - Status HTTP
+    - Latência média (ping)
+    - Tempo de carregamento da página
+    - Informações do certificado SSL
+    """
+    hosts = Host.objects.all()
+    json_hosts = json.loads(serializers.serialize("json", hosts))
+
+    for host_obj in json_hosts:
+        fields = host_obj["fields"]
+        host_address = fields.get("host")
+
+        if not host_address:
+            continue  # Pula hosts sem endereço
+
+        # Coleta de dados
+        http_and_latency = get_http_status_and_latency(host_address)
+        cert_info = get_certificate_info(host_address)
+        load_time = asyncio.run(measure_load_time(f"https://{host_address}"))
+
+        # Atualiza os campos
+        fields.update(http_and_latency)
+        fields["load_time"] = load_time
+        fields["cert_info"] = cert_info
+
+    return JsonResponse(json_hosts, safe=False)
+
