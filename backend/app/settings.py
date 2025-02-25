@@ -172,5 +172,5 @@ CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL')
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 
-CELERY_RESULT_BACKEND = "django-db"  # Salva resultados no banco de dados
 CELERY_CACHE_BACKEND = "django-cache"  # Usa cache do Django para os resultados
+CELERY_RESULT_BACKEND = "django-db"
