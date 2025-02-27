@@ -171,6 +171,9 @@ def create_host(request):
                 "kwargs": json.dumps({}),
             }
         )
+        if created:
+            from api.tasks import atualiza_host  
+            atualiza_host.delay(host_created.id)  
         return JsonResponse({'success': 'Host criado com sucesso!'}, status=201)
     except Exception as e:
         return JsonResponse({'error': f'Ocorreu um erro ao criar o host: {str(e)}'}, status=500)

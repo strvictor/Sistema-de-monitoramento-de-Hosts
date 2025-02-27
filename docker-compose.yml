@@ -6,7 +6,8 @@ services:
       dockerfile: backend/Dockerfile
     container_name: django_backend
     volumes:
-      - ./backend:/app  # Para facilitar o desenvolvimento, mapeia o código local
+      - ./backend:/app
+      - static_volume:/app/staticfiles
     ports:
       - "8000:8000"
     depends_on:
@@ -17,6 +18,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_HOST: ${DB_HOST}
       POSTGRES_PORT: 5432
+    command: >
+      sh -c "python manage.py collectstatic --noinput && python manage.py runserver 0.0.0.0:8000"
 
   frontend:
     restart: always
@@ -86,3 +89,4 @@ services:
 
 volumes:
   postgres_data:
+  static_volume:

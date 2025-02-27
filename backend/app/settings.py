@@ -174,3 +174,7 @@ CELERY_TASK_SERIALIZER = "json"
 
 CELERY_CACHE_BACKEND = "django-cache"  # Usa cache do Django para os resultados
 CELERY_RESULT_BACKEND = "django-db"
+
+# Configuração para arquivos estáticos
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
