@@ -33,12 +33,12 @@ class HostHistory(models.Model):
     
     status = models.BooleanField(default=True)  # True = Online, False = Offline
     status_code = models.CharField(max_length=10, null=True, blank=True)  # Pode ser "Error"
-    avg_latency = models.FloatField(default=0.0)  # Média do ping (ms)
-    load_time = models.FloatField(default=0.0)  # Tempo de carregamento (s)
+    avg_latency = models.CharField(max_length=10, default=0)  # Média do ping (ms)
+    load_time = models.CharField(max_length=10, default=0)  # Tempo de carregamento (s)
     
     cert_not_before = models.CharField(max_length=20, null=True, blank=True)  # Data de início SSL
     cert_not_after = models.CharField(max_length=20, null=True, blank=True)  # Data de expiração SSL
-    cert_error = models.TextField(null=True, blank=True)  # Armazena erro caso o SSL falhe
+    cert_error = models.TextField(null=True, blank=True, default='-')  # Armazena erro caso o SSL falhe
     
     ultima_atualizacao = models.DateTimeField(auto_now=True)
 
