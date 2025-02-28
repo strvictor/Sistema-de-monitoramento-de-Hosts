@@ -18,6 +18,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_HOST: ${DB_HOST}
       POSTGRES_PORT: 5432
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
     command: >
       sh -c "python manage.py collectstatic --noinput && python manage.py runserver 0.0.0.0:8000"
 
@@ -43,15 +44,11 @@ services:
     ports:
       - "5432:5432"
 
-  rabbitmq:
+  redis:
     restart: always
-    image: rabbitmq:3-management
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    image: redis:latest
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "6379:6379"
 
   celery-worker:
     restart: always
@@ -60,15 +57,11 @@ services:
       dockerfile: backend/Dockerfile
     container_name: celery_worker
     depends_on:
-      - rabbitmq
+      - redis
       - db
     env_file:
       - .env
     environment:
-      DB_NAME: ${POSTGRES_DB}
-      DB_USER: ${POSTGRES_USER}
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
-      DB_HOST: ${DB_HOST}
       CELERY_BROKER_URL: ${CELERY_BROKER_URL}
     command: >
       sh -c "celery -A app worker --loglevel=info"
@@ -82,7 +75,7 @@ services:
     command: celery -A app beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
     depends_on:
       - backend
-      - rabbitmq
+      - redis
       - celery-worker
     environment:
       CELERY_BROKER_URL: ${CELERY_BROKER_URL}

@@ -8,6 +8,8 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 import json, re
 from django_celery_beat.models import PeriodicTask, IntervalSchedule
 import json 
+from api.tasks import atualiza_host  
+
 
 def validate_token(request):
     auth = JWTAuthentication()
@@ -26,6 +28,39 @@ def validate_token(request):
         return False, JsonResponse({'error': 'Token inválido ou expirado'}, status=401)
     
     return True, user
+
+
+def create_or_update_task(freq_tipo, host_created):
+    frequency_map = {
+        "A cada 2 Minutos": (2, IntervalSchedule.MINUTES),
+        "A cada 10 Minutos": (10, IntervalSchedule.MINUTES),
+        "A cada 30 Minutos": (30, IntervalSchedule.MINUTES),
+        "A cada Hora": (1, IntervalSchedule.HOURS),
+        "Todos os dias": (1, IntervalSchedule.DAYS),
+        "Semanalmente": (7, IntervalSchedule.DAYS),
+        "Mensalmente": (30, IntervalSchedule.DAYS),
+    }
+
+    every, period = frequency_map.get(freq_tipo, (1, IntervalSchedule.HOURS))
+    
+    schedule, _ = IntervalSchedule.objects.get_or_create(
+        every=every,
+        period=period,
+    )
+    # Criar ou atualizar uma tarefa periódica
+    task_name = f"{host_created.id} - {host_created.usuario}"
+    
+    periodic_task, created = PeriodicTask.objects.update_or_create(
+        name=task_name,
+        defaults={
+            "interval": schedule,
+            "task": "api.tasks.atualiza_host",
+            "args": json.dumps([host_created.id]),
+            "kwargs": json.dumps({}),
+        }
+    )
+    return atualiza_host.delay(host_created.id)  
+
 
 @csrf_exempt
 def create_account(request):
@@ -142,38 +177,9 @@ def create_host(request):
             frequencia_atualizacao=freq,
             usuario=retorno
         )
+        task_create = create_or_update_task(freq_tipo, host_created)
+        print(task_create)
         
-        frequency_map = {
-            "A cada 2 Minutos": (2, IntervalSchedule.MINUTES),
-            "A cada 10 Minutos": (10, IntervalSchedule.MINUTES),
-            "A cada 30 Minutos": (30, IntervalSchedule.MINUTES),
-            "A cada Hora": (1, IntervalSchedule.HOURS),
-            "Todos os dias": (1, IntervalSchedule.DAYS),
-            "Semanalmente": (7, IntervalSchedule.DAYS),
-            "Mensalmente": (30, IntervalSchedule.DAYS),
-        }
-
-        every, period = frequency_map.get(freq_tipo, (1, IntervalSchedule.HOURS))
-        
-        schedule, _ = IntervalSchedule.objects.get_or_create(
-            every=every,
-            period=period,
-        )
-        # Criar ou atualizar uma tarefa periódica
-        task_name = f"{host_created.nome} - {host_created.usuario}"
-        
-        periodic_task, created = PeriodicTask.objects.update_or_create(
-            name=task_name,
-            defaults={
-                "interval": schedule,
-                "task": "api.tasks.atualiza_host",
-                "args": json.dumps([host_created.id]),
-                "kwargs": json.dumps({}),
-            }
-        )
-        if created:
-            from api.tasks import atualiza_host  
-            atualiza_host.delay(host_created.id)  
         return JsonResponse({'success': 'Host criado com sucesso!'}, status=201)
     except Exception as e:
         return JsonResponse({'error': f'Ocorreu um erro ao criar o host: {str(e)}'}, status=500)
@@ -206,10 +212,15 @@ def delete_host(request, host_id):
     valid, user = validate_token(request)
     if not valid:
         return user
-
+    
     try:
         host = Host.objects.get(id=host_id, usuario=user)
         host.delete()
+        task_name = f'{host_id} - {user.username}'
+        task = PeriodicTask.objects.get(name=task_name)
+        task.enabled = False
+        task.save()
+        
         return JsonResponse({'success': 'Host excluído com sucesso!'}, status=200)
     except Host.DoesNotExist:
         return JsonResponse({'error': 'Host não encontrado.'}, status=404)
@@ -237,6 +248,31 @@ def update_host(request, host_id):
     if not nome or not host_r or not freq_tipo:
         return JsonResponse({'error': 'Todos os campos (nome, dominio, host e frequencia) são obrigatórios.'}, status=400)
     
+    
+    # Limpeza do host
+    host = host_r.lower()
+    if host.startswith(('http://', 'https://')):
+        host = host.split('://')[1]
+    if host.startswith('www.'):
+        host = host[4:]
+    host = host.rstrip('/').split('/')[0]
+
+    # Expressões regulares para validação
+    domain_regex = r'^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$'
+    ipv4_regex = r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
+
+    # Validação do host
+    is_valid_domain = re.fullmatch(domain_regex, host) is not None
+    is_valid_ip = re.fullmatch(ipv4_regex, host) is not None
+
+    if not (is_valid_domain or is_valid_ip):
+        return JsonResponse({'error': 'Host inválido. Deve ser um domínio válido ou IPv4.'}, status=400)
+
+    # Verificação da frequência
+    if not FrequenciaAtualizacao.objects.filter(tipo=freq_tipo).exists():
+        return JsonResponse({'error': 'Frequência de atualização não encontrada.'}, status=404)
+    
+    
     try:
         host = Host.objects.get(id=host_id, usuario=user)
         
@@ -244,6 +280,10 @@ def update_host(request, host_id):
         host.host = host_r
         host.frequencia_atualizacao = FrequenciaAtualizacao.objects.get(tipo=freq_tipo)
         host.save()
+        
+        task_create = create_or_update_task(freq_tipo, host)
+        print(task_create)
+        
         return JsonResponse({'success': 'Host atualizado com sucesso!'}, status=200)
     except Host.DoesNotExist:
         return JsonResponse({'error': 'Host não encontrado.'}, status=404)

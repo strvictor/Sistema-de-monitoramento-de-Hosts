@@ -1,5 +1,5 @@
 # Use uma imagem Python enxuta
-FROM python:3.12-slim
+FROM python:3.10-slim
 
 # Variáveis de ambiente para não gerar arquivos .pyc e manter logs no stdout
 ENV PYTHONDONTWRITEBYTECODE 1
