@@ -60,6 +60,10 @@ def create_or_update_task(freq_tipo, host_created):
             "kwargs": json.dumps({}),
         }
     )
+    if not host_created.status:
+        periodic_task.enabled = False
+        periodic_task.save()
+        
     _ = save_historys.delay(host_created.id) 
     return _
 
@@ -142,6 +146,7 @@ def create_host(request):
     nome = str(data.get('nome', '')).strip().title()
     raw_host = str(data.get('dominio', '')).strip()
     freq_tipo = data.get('frequencia', None)
+    status = data.get('status', True)
 
     # Validação de campos obrigatórios
     if not nome or not raw_host or not freq_tipo:
@@ -170,6 +175,14 @@ def create_host(request):
     if not FrequenciaAtualizacao.objects.filter(tipo=freq_tipo).exists():
         return JsonResponse({'error': 'Frequência de atualização não encontrada.'}, status=404)
 
+    if isinstance(status, str):
+        status = status.lower() == 'true'
+        
+    if not status:
+        status = False
+    else:
+        status = True
+        
     # Criação do host
     try:
         freq = FrequenciaAtualizacao.objects.get(tipo=freq_tipo)
@@ -178,11 +191,10 @@ def create_host(request):
             host=host,
             frequencia_atualizacao=freq,
             usuario=retorno,
-            status=True  # Definindo status como True ao criar
+            status=status
         )
         host_created.save()
         task_create = create_or_update_task(freq_tipo, host_created)
-        print(task_create)
         
         return JsonResponse({'success': 'Host criado com sucesso!'}, status=201)
     except Exception as e:
@@ -299,7 +311,6 @@ def update_host(request, host_id):
         host_bd.save()
         
         task_create = create_or_update_task(freq_tipo, host_bd)
-        print(task_create)
         
         return JsonResponse({'success': 'Host atualizado com sucesso!'}, status=200)
     except Host.DoesNotExist:

@@ -68,7 +68,8 @@ def get_http_status_and_latency(host):
 
     try:
         url = f"https://{host}"
-        resp = requests.get(url, timeout=10, verify=False)
+        #TODO - Fazer uma validação para verificar o ping para IPV4.  
+        resp = requests.get(url, timeout=10)
         result["status_http"] = resp.status_code
     except requests.RequestException:
         pass  # Mantém "Error" no status HTTP
@@ -130,7 +131,6 @@ def save_historys(self, id):
         )
         
         host_history.save()
-        print(HostHistory.objects.all())
 
         return f"Histórico do host {host_address} salvo com sucesso!"
     except Exception as e:
