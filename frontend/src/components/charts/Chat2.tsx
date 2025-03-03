@@ -18,7 +18,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart"
 const chartData = [
-  { month: "January", desktop: 186, mobile: 80 },
+  { month: "January", latencia: 186, mobile: 80 },
   { month: "February", desktop: 305, mobile: 200 },
   { month: "March", desktop: 237, mobile: 120 },
   { month: "April", desktop: 73, mobile: 190 },
@@ -27,11 +27,11 @@ const chartData = [
 ]
 
 const chartConfig = {
-  desktop: {
+  latencia: {
     label: "Lantência",
     color: "hsl(var(--chart-1))",
   },
-  mobile: {
+  ping: {
     label: "Ping",
     color: "hsl(var(--chart-2))",
   },

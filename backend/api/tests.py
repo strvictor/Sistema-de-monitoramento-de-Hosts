@@ -62,13 +62,13 @@
 # url = "https://chatgpt.com/c/67c5a201-4070-8003-98a4-07b06130b859"
 # print(measure_load_time(url))
 
-import requests
-result = {'status_http': 'error'}
-try:
-    url = f"https://23.227.38.65"
-    resp = requests.get(url, timeout=10, verify=False)
-    result["status_http"] = resp.status_code
-except requests.RequestException:
-    pass  
+# import requests
+# result = {'status_http': 'error'}
+# try:
+#     url = f"https://23.227.38.65"
+#     resp = requests.get(url, timeout=10, verify=False)
+#     result["status_http"] = resp.status_code
+# except requests.RequestException:
+#     pass  
 
-print(result)
+# print(result)

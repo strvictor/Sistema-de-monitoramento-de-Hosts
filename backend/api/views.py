@@ -317,3 +317,88 @@ def update_host(request, host_id):
         return JsonResponse({'error': 'Host não encontrado.'}, status=404)
     except Exception as e:
         return JsonResponse({'error': f'Ocorreu um erro ao editar o host: {str(e)}'}, status=500)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# from django.db.models import Avg, F, Func, FloatField
+# from django.db.models.functions import Cast, TruncHour  # Ajuste na importação do Cast
+# from .models import HostHistory  # ajuste conforme seu app/modelo
+# from rest_framework.decorators import api_view
+# from django.http import JsonResponse
+
+# # Função para extrair o valor numérico, removendo unidades
+# class RemoveUnit(Func):
+#     function = 'REGEXP_REPLACE'  # Função SQL para substituir padrões
+#     template = "%(function)s(%(expressions)s, '[^0-9\.]', '', 'g')"
+
+#     def __init__(self, expression, **extra):
+#         super().__init__(expression, **extra)
+
+# @api_view(['GET'])
+# def test(request):
+#     # Agrupa os registros por hora da última atualização e calcula a média dos campos
+#     dados = (
+#         HostHistory.objects
+#         .annotate(hour=TruncHour('ultima_atualizacao'))
+#         .values('hour')
+#         .annotate(
+#             # Primeiro remove as unidades e depois converte para FloatField
+#             avg_latency_avg=Avg(Cast(RemoveUnit(F('avg_latency')), FloatField())),
+#             load_time_avg=Avg(Cast(RemoveUnit(F('load_time')), FloatField()))
+#         )
+#         .order_by('hour')
+#     )
+
+#     chartData = []
+#     for d in dados:
+#         chartData.append({
+#             'hour': d['hour'].strftime('%H:%M'),  # formato ex: "14:00"
+#             'avg_latency': d['avg_latency_avg'],
+#             'load_time': d['load_time_avg'],
+#         })
+
+#     # Retorna os dados após o loop (fora do for)
+#     return JsonResponse(chartData, safe=False)
+
+from datetime import datetime, timedelta
+
+# Cria uma lista com todos os intervalos de 10 minutos do dia
+start_time = datetime.combine(datetime.today(), datetime.min.time())
+intervals = [start_time + timedelta(minutes=10*i) for i in range(144)]  # 144 intervalos de 10 minutos
+
+# Mapeia os intervalos existentes
+existing_data = {d['truncated_time']: d for d in dados}
+
+# Preenche os dados faltantes com 0
+filled_data = []
+for interval in intervals:
+    entry = existing_data.get(interval, {
+        'truncated_time': interval,
+        'avg_latency_avg': 0,
+        'load_time_avg': 0
+    })
+    filled_data.append(entry)
+
+# Atualiza chartData com os dados preenchidos
+chartData = [
+    {
+        'time': entry['truncated_time'].strftime('%H:%M'),
+        'avg_latency': round(entry['avg_latency_avg'], 2),
+        'load_time': round(entry['load_time_avg'], 2)
+    }
+    for entry in filled_data
+]
