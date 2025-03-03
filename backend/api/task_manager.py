@@ -93,7 +93,6 @@ def save_historys(self, id):
     - Informações do certificado SSL
     """
     try:
-        time.sleep(10)
         host = Host.objects.get(id=id)
         user = host.usuario
         status = host.status

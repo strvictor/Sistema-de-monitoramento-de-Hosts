@@ -15,11 +15,9 @@ SECRET_KEY = 'django-insecure-*c^pezp0f0r4@_mzxv#@szp++la9-*0h1_c=yv^12k$p+q03t3
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = ['*']
 
 # Application definition
-
 INSTALLED_APPS = [
     # apps exter
     'rest_framework',
@@ -73,24 +71,18 @@ WSGI_APPLICATION = 'app.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-if DEBUG:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
+
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('POSTGRES_DB'),
+        'USER': os.getenv('POSTGRES_USER'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
+        'HOST': os.getenv('DB_HOST', 'db-postgres'),
+        'PORT': '5432',
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('POSTGRES_DB'),
-            'USER': os.getenv('POSTGRES_USER'),
-            'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
-            'HOST': os.getenv('DB_HOST'),
-            'PORT': '5432',
-        }
-    }
+}
 
 
 # Password validation
@@ -172,8 +164,8 @@ CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL')
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 
-CELERY_CACHE_BACKEND = "django-cache"  # Usa cache do Django para os resultados
-CELERY_RESULT_BACKEND = "django-db"
+# CELERY_CACHE_BACKEND = "django-cache"  # Usa cache do Django para os resultados
+# CELERY_RESULT_BACKEND = "django-db"
 CELERY_BEAT_SYNC_EVERY = 30  # Sincroniza a cada 30 segundos (em vez de 5 minutos)
 
 # Configuração para arquivos estáticos
