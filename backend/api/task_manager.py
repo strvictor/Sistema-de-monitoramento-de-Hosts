@@ -1,32 +1,29 @@
 
-import asyncio
-import socket
-import ssl
+import socket, ssl, requests, time
 from datetime import datetime
 from functools import lru_cache
 from OpenSSL import crypto
 from ping3 import ping
-import requests
 from api.models import Host, HostHistory
-from playwright.async_api import async_playwright
 from celery import shared_task
+from playwright.sync_api import sync_playwright
 
 
 
-async def measure_load_time(url):
+def measure_load_time(url):
     """
     Mede o tempo de carregamento da página usando Playwright.
     """
     try:
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
-            page = await browser.new_page()
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
 
-            start_time = asyncio.get_event_loop().time()
-            await page.goto(url)  # Timeout de 10s
-            end_time = asyncio.get_event_loop().time()
+            start_time = time.perf_counter()  # Captura o tempo inicial
+            page.goto(url, timeout=10000)  # Timeout de 10s
+            end_time = time.perf_counter()  # Captura o tempo final
 
-            await browser.close()
+            browser.close()
             return f"{(end_time - start_time):.3f}s"
     except Exception as e:
         return f"N/A: {str(e)}"
@@ -96,6 +93,7 @@ def save_historys(self, id):
     - Informações do certificado SSL
     """
     try:
+        time.sleep(10)
         host = Host.objects.get(id=id)
         user = host.usuario
         status = host.status
@@ -108,11 +106,10 @@ def save_historys(self, id):
         http_and_latency = get_http_status_and_latency(host_address)
         
         cert_info = get_certificate_info(host_address)
+        #TODO - Fazer uma validação para verificar se o retorno do certificado foi valido, se não for, salvar o erro no banco na coluna correspondente.
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        load_time = loop.run_until_complete(measure_load_time(f"https://{host_address}"))
-        loop.close()
+        load_time = measure_load_time(f"https://{host_address}")
+        #TODO - Fazer um try exept para verificar a medição no protocolo http tbm.
 
         # Cria o histórico
         host_history = HostHistory.objects.create(

@@ -9,6 +9,8 @@ import json, re
 from django_celery_beat.models import PeriodicTask, IntervalSchedule
 import json
 from .task_manager import save_historys
+from django.db import transaction
+
 
 def validate_token(request):
     auth = JWTAuthentication()
@@ -58,8 +60,8 @@ def create_or_update_task(freq_tipo, host_created):
             "kwargs": json.dumps({}),
         }
     )
-    return 'OK - OK'
-    # return save_historys.delay(host_created.id)  
+    _ = save_historys.delay(host_created.id) 
+    return _
 
 
 @csrf_exempt
