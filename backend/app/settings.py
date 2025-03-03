@@ -109,7 +109,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'pt-br'
 
-TIME_ZONE = 'America/Belem'
+TIME_ZONE = 'America/Sao_Paulo'
 
 USE_I18N = True
 
@@ -164,8 +164,8 @@ CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL')
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 
-# CELERY_CACHE_BACKEND = "django-cache"  # Usa cache do Django para os resultados
-# CELERY_RESULT_BACKEND = "django-db"
+CELERY_CACHE_BACKEND = "django-cache"  # Usa cache do Django para os resultados
+CELERY_RESULT_BACKEND = "django-db"
 CELERY_BEAT_SYNC_EVERY = 30  # Sincroniza a cada 30 segundos (em vez de 5 minutos)
 
 # Configuração para arquivos estáticos

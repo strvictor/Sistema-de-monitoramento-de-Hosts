@@ -177,7 +177,8 @@ def create_host(request):
             nome=nome,
             host=host,
             frequencia_atualizacao=freq,
-            usuario=retorno
+            usuario=retorno,
+            status=True  # Definindo status como True ao criar
         )
         host_created.save()
         task_create = create_or_update_task(freq_tipo, host_created)
@@ -246,10 +247,11 @@ def update_host(request, host_id):
     nome = str(data.get('nome', '')).strip().title()
     host_r = str(data.get('dominio', '')).strip()
     freq_tipo = data.get('frequencia', None)
+    status = data.get('status', True)
 
     # Validação de campos obrigatórios
     if not nome or not host_r or not freq_tipo:
-        return JsonResponse({'error': 'Todos os campos (nome, dominio, host e frequencia) são obrigatórios.'}, status=400)
+        return JsonResponse({'error': 'Todos os campos (nome, dominio e frequencia) são obrigatórios.'}, status=400)
     
     
     # Limpeza do host
@@ -275,16 +277,28 @@ def update_host(request, host_id):
     if not FrequenciaAtualizacao.objects.filter(tipo=freq_tipo).exists():
         return JsonResponse({'error': 'Frequência de atualização não encontrada.'}, status=404)
     
+    if isinstance(status, str):
+        status = status.lower() == 'true'
+        
+    task_name = f'{host_id} - {user.username}'
+    task = PeriodicTask.objects.get(name=task_name)
     
+    if not status:
+        task.enabled = False
+    else:
+        task.enabled = True
+    task.save()
+        
     try:
-        host = Host.objects.get(id=host_id, usuario=user)
+        host_bd = Host.objects.get(id=host_id, usuario=user)
         
-        host.nome = nome
-        host.host = host_r
-        host.frequencia_atualizacao = FrequenciaAtualizacao.objects.get(tipo=freq_tipo)
-        host.save()
+        host_bd.nome = nome
+        host_bd.host = host
+        host_bd.status = status
+        host_bd.frequencia_atualizacao = FrequenciaAtualizacao.objects.get(tipo=freq_tipo)
+        host_bd.save()
         
-        task_create = create_or_update_task(freq_tipo, host)
+        task_create = create_or_update_task(freq_tipo, host_bd)
         print(task_create)
         
         return JsonResponse({'success': 'Host atualizado com sucesso!'}, status=200)

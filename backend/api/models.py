@@ -34,7 +34,7 @@ class HostHistory(models.Model):
     status = models.BooleanField(default=True)  # True = Online, False = Offline
     status_code = models.CharField(max_length=10, null=True, blank=True)  # Pode ser "Error"
     avg_latency = models.CharField(max_length=10, default=0)  # Média do ping (ms)
-    load_time = models.CharField(max_length=10, default=0)  # Tempo de carregamento (s)
+    load_time = models.CharField(max_length=20, default=0)  # Tempo de carregamento (s)
     
     cert_not_before = models.CharField(max_length=20, null=True, blank=True)  # Data de início SSL
     cert_not_after = models.CharField(max_length=20, null=True, blank=True)  # Data de expiração SSL
@@ -43,4 +43,4 @@ class HostHistory(models.Model):
     ultima_atualizacao = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Host: {self.host.nome} | Status: {self.status_code} | Latência: {self.avg_latency}ms"
+        return f"Host: {self.host.nome} | Status: {self.status_code} | Latência: {self.avg_latency}ms | Ultima Att: {self.ultima_atualizacao}"

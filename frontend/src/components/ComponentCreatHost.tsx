@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useState, useEffect, useCallback } from "react"
-import axios from "axios"
-import { toast } from "sonner"
+import * as React from "react";
+import { useState, useEffect, useCallback } from "react";
+import axios from "axios";
+import { toast } from "sonner";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -15,11 +15,11 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-} from "@tanstack/react-table"
-import { MoreHorizontal } from "lucide-react"
-import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
-import { Button } from "./ui/button"
-import { Input } from "@/components/ui/input"
+} from "@tanstack/react-table";
+import { MoreHorizontal } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { Button } from "./ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -27,7 +27,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -36,7 +36,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,18 +44,25 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Label } from "@/components/ui/label"
-import FrequencySelect from "./FrequencySelect"
+} from "@/components/ui/dropdown-menu";
+import { Label } from "@/components/ui/label";
+import FrequencySelect from "./FrequencySelect";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 export type Host = {
-  id: string
-  status: "True" | "False"
-  dominio: string
-  frequencia: string
-  ultimaVerificacao: string
-  nome: string
-}
+  id: string;
+  status: boolean;
+  dominio: string;
+  frequencia: string;
+  ultimaVerificacao: string;
+  nome: string;
+};
 
 export const columns: ColumnDef<Host>[] = [
   {
@@ -86,7 +93,10 @@ export const columns: ColumnDef<Host>[] = [
   {
     accessorKey: "status",
     header: "Status",
-    cell: ({ row }) => <div className="capitalize">{row.getValue("status")}</div>,
+    cell: ({ row }) => {
+      const status = row.getValue("status") === "true";
+      return <div className="capitalize">{status ? "Ativo" : "Inativo"}</div>;
+    },
   },
   {
     accessorKey: "actions",
@@ -94,7 +104,7 @@ export const columns: ColumnDef<Host>[] = [
     id: "actions",
     enableHiding: false,
     cell: ({ row }) => {
-      const host = row.original
+      const host = row.original;
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -124,54 +134,58 @@ export const columns: ColumnDef<Host>[] = [
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      )
+      );
     },
   },
-]
+];
 
 async function handleDeleteHost(hostId: string) {
   if (!window.confirm("Tem certeza que deseja excluir este host?")) {
-    return
+    return;
   }
   try {
     await axios.delete(`http://localhost:8000/api/delete-host/${hostId}`, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
       },
-    })
-    toast.success("Host deletado com sucesso!")
-    window.dispatchEvent(new Event("hostsUpdated"))
+    });
+    toast.success("Host deletado com sucesso!");
+    window.dispatchEvent(new Event("hostsUpdated"));
   } catch (error: any) {
     toast.error("Erro ao deletar host", {
       description: error.response?.data?.error || error.message,
-    })
+    });
   }
 }
 
 export function ComponentCreateHost() {
-  const [sorting, setSorting] = useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
-  const [rowSelection, setRowSelection] = useState({})
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [hosts, setHosts] = useState<Host[]>([])
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = useState({});
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [hosts, setHosts] = useState<Host[]>([]);
 
   // Estados do formulário
-  const [nome, setNome] = useState("")
-  const [host, setHost] = useState("")
-  const [frequencia, setFrequencia] = useState("")
+  const [nome, setNome] = useState("");
+  const [host, setHost] = useState("");
+  const [frequencia, setFrequencia] = useState("");
+  const [status, setStatus] = useState(true);
 
   // Estado para controle de edição
-  const [editingHost, setEditingHost] = useState<Host | null>(null)
+  const [editingHost, setEditingHost] = useState<Host | null>(null);
 
   // Função para buscar hosts no backend
   const fetchHosts = useCallback(async () => {
     try {
-      const response = await axios.get("http://localhost:8000/api/list-hosts/", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      })
+      const response = await axios.get(
+        "http://localhost:8000/api/list-hosts/",
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        }
+      );
       const transformedHosts = response.data.hosts.map((h: any) => ({
         id: h.id.toString(),
         nome: h.name,
@@ -179,54 +193,56 @@ export function ComponentCreateHost() {
         frequencia: h.frequency,
         ultimaVerificacao: h.last_update,
         status: h.status.toString(),
-      }))
-      setHosts(transformedHosts)
-      console.log("Hosts carregados com sucesso:", transformedHosts)
+      }));
+      setHosts(transformedHosts);
+      console.log("Hosts carregados com sucesso:", transformedHosts);
     } catch (error) {
-      console.error("Erro ao buscar hosts", error)
+      console.error("Erro ao buscar hosts", error);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    fetchHosts()
-    window.addEventListener("hostsUpdated", fetchHosts)
-    return () => window.removeEventListener("hostsUpdated", fetchHosts)
-  }, [fetchHosts])
+    fetchHosts();
+    window.addEventListener("hostsUpdated", fetchHosts);
+    return () => window.removeEventListener("hostsUpdated", fetchHosts);
+  }, [fetchHosts]);
 
   // Ouvindo o evento customizado "editHost" para abrir o modal de edição
   useEffect(() => {
     const editListener = (e: CustomEvent) => {
-      handleEditHost(e.detail)
-    }
-    window.addEventListener("editHost", editListener as EventListener)
-    return () => window.removeEventListener("editHost", editListener as EventListener)
-  }, [])
+      handleEditHost(e.detail);
+    };
+    window.addEventListener("editHost", editListener as EventListener);
+    return () =>
+      window.removeEventListener("editHost", editListener as EventListener);
+  }, []);
 
   // Função para iniciar a edição de um host: preenche os campos e abre o modal
   const handleEditHost = (hostData: Host) => {
-    setEditingHost(hostData)
-    setNome(hostData.nome)
-    setHost(hostData.dominio)
-    setFrequencia(hostData.frequencia)
-    setDialogOpen(true)
-  }
+    setEditingHost(hostData);
+    setNome(hostData.nome);
+    setHost(hostData.dominio);
+    setFrequencia(hostData.frequencia);
+    setStatus(hostData.status);
+    setDialogOpen(true);
+  };
 
   // Função para lidar com o registro ou atualização do host
   const handleRegister = async (event: React.FormEvent) => {
-    event.preventDefault()
-    const errorAlert = document.getElementById("card-error")
+    event.preventDefault();
+    const errorAlert = document.getElementById("card-error");
 
     if (!nome.trim() || !host.trim() || !frequencia.trim()) {
       if (errorAlert) {
         errorAlert.querySelector(".text-red-100")!.textContent =
-          "Por favor, preencha todos os campos."
-        errorAlert.classList.remove("hidden")
+          "Por favor, preencha todos os campos.";
+        errorAlert.classList.remove("hidden");
       }
-      return
+      return;
     }
 
     try {
-      const data = { nome, dominio: host, frequencia }
+      const data = { nome, dominio: host, frequencia, status };
 
       if (editingHost) {
         // Atualização do host
@@ -238,39 +254,44 @@ export function ComponentCreateHost() {
               Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
             },
           }
-        )
+        );
         toast.success("Host atualizado com sucesso!", {
           description: `O host ${nome} foi atualizado com sucesso.`,
-        })
-        setEditingHost(null)
+        });
+        setEditingHost(null);
       } else {
         // Criação do host
         await axios.post("http://localhost:8000/api/create-host/", data, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
           },
-        })
+        });
         toast.success("Host registrado com sucesso!", {
           description: `O host ${nome} foi adicionado com sucesso.`,
-        })
+        });
       }
 
       // Limpa os campos do formulário e fecha o diálogo
-      setNome("")
-      setHost("")
-      setFrequencia("")
-      setDialogOpen(false)
+      setNome("");
+      setHost("");
+      setFrequencia("");
+      setStatus(true);
+      setDialogOpen(false);
 
       // Re-fetch os hosts para atualizar a tabela
-      fetchHosts()
+      fetchHosts();
     } catch (error: any) {
-      console.error("Erro ao registrar/atualizar o host:", error.response?.data || error.message)
+      console.error(
+        "Erro ao registrar/atualizar o host:",
+        error.response?.data || error.message
+      );
       if (errorAlert) {
-        errorAlert.querySelector(".text-red-100")!.textContent = error.response.data.error
-        errorAlert.classList.remove("hidden")
+        errorAlert.querySelector(".text-red-100")!.textContent =
+          error.response.data.error;
+        errorAlert.classList.remove("hidden");
       }
     }
-  }
+  };
 
   const table = useReactTable({
     data: hosts,
@@ -289,7 +310,7 @@ export function ComponentCreateHost() {
       columnVisibility,
       rowSelection,
     },
-  })
+  });
 
   return (
     <div className="w-full">
@@ -297,7 +318,9 @@ export function ComponentCreateHost() {
         <Input
           placeholder="Buscar pelo nome..."
           value={(table.getColumn("nome")?.getFilterValue() as string) ?? ""}
-          onChange={(event) => table.getColumn("nome")?.setFilterValue(event.target.value)}
+          onChange={(event) =>
+            table.getColumn("nome")?.setFilterValue(event.target.value)
+          }
           className="max-w-sm"
         />
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -331,7 +354,23 @@ export function ComponentCreateHost() {
               <Label>Domínio/IP:</Label>
               <Input value={host} onChange={(e) => setHost(e.target.value)} />
               <Label>Atualização:</Label>
-              <FrequencySelect value={frequencia} onValueChange={setFrequencia} />
+              <FrequencySelect
+                value={frequencia}
+                onValueChange={setFrequencia}
+              />
+              <Label>Status:</Label>
+              <Select
+                value={status ? "true" : "false"}
+                onValueChange={(value) => setStatus(value === "true")}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Ativo</SelectItem>
+                  <SelectItem value="false">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
               <DialogFooter>
                 <DialogTrigger asChild>
                   <Button variant="outline">Cancelar</Button>
@@ -352,7 +391,10 @@ export function ComponentCreateHost() {
                   <TableHead key={header.id}>
                     {header.isPlaceholder
                       ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -364,14 +406,20 @@ export function ComponentCreateHost() {
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
                   Sem hosts cadastrados.
                 </TableCell>
               </TableRow>
@@ -391,7 +439,8 @@ export function ComponentCreateHost() {
             Anterior
           </Button>
           <span className="text-sm text-gray-400">
-            Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
+            Página {table.getState().pagination.pageIndex + 1} de{" "}
+            {table.getPageCount()}
           </span>
           <Button
             className="cursor-pointer"
@@ -405,5 +454,5 @@ export function ComponentCreateHost() {
         </div>
       </div>
     </div>
-  )
+  );
 }

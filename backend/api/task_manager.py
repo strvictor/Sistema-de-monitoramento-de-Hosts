@@ -26,7 +26,7 @@ def measure_load_time(url):
             browser.close()
             return f"{(end_time - start_time):.3f}s"
     except Exception as e:
-        return f"N/A: {str(e)}"
+        return f"N/A"
 
 
 @lru_cache(maxsize=100)  # Cache para evitar múltiplas consultas ao mesmo host
@@ -56,7 +56,7 @@ def get_certificate_info(host, port=443):
             "status": status,
         }
     except Exception as e:
-        return {"error": str(e).split(']')[0].replace('[', '').split(':')[1].strip()}
+        return {"error": str(e)}
 
 
 def get_http_status_and_latency(host):
@@ -68,7 +68,7 @@ def get_http_status_and_latency(host):
 
     try:
         url = f"https://{host}"
-        resp = requests.get(url, timeout=5)
+        resp = requests.get(url, timeout=10, verify=False)
         result["status_http"] = resp.status_code
     except requests.RequestException:
         pass  # Mantém "Error" no status HTTP
@@ -92,6 +92,7 @@ def save_historys(self, id):
     - Tempo de carregamento da página
     - Informações do certificado SSL
     """
+    cert_info = {'not_before': None, 'not_after': None}
     try:
         host = Host.objects.get(id=id)
         user = host.usuario
@@ -110,6 +111,11 @@ def save_historys(self, id):
         load_time = measure_load_time(f"https://{host_address}")
         #TODO - Fazer um try exept para verificar a medição no protocolo http tbm.
 
+        if 'error' in cert_info:
+            cert_info['not_before'] = 'N/A'
+            cert_info['not_after'] = 'N/A'
+            
+            
         # Cria o histórico
         host_history = HostHistory.objects.create(
             host=host,
@@ -119,7 +125,8 @@ def save_historys(self, id):
             avg_latency=http_and_latency['avg_latency'],
             load_time=load_time,
             cert_not_before=cert_info['not_before'],
-            cert_not_after=cert_info['not_after']
+            cert_not_after=cert_info['not_after'],
+            cert_error=cert_info.get('error', '-'),
         )
         
         host_history.save()

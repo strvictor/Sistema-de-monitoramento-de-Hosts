@@ -37,27 +37,38 @@
 
 # [6, 7, 8, 9, 11, 12, 13, 14]
 
-import time
-from playwright.sync_api import sync_playwright
+# import time
+# from playwright.sync_api import sync_playwright
 
-def measure_load_time(url):
-    """
-    Mede o tempo de carregamento da página usando Playwright (versão síncrona).
-    """
-    try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=False)
-            page = browser.new_page()
+# def measure_load_time(url):
+#     """
+#     Mede o tempo de carregamento da página usando Playwright (versão síncrona).
+#     """
+#     try:
+#         with sync_playwright() as p:
+#             browser = p.chromium.launch(headless=False)
+#             page = browser.new_page()
 
-            start_time = time.perf_counter()  # Captura o tempo inicial
-            page.goto(url, timeout=10000)  # Timeout de 10s
-            end_time = time.perf_counter()  # Captura o tempo final
+#             start_time = time.perf_counter()  # Captura o tempo inicial
+#             page.goto(url, timeout=10000)  # Timeout de 10s
+#             end_time = time.perf_counter()  # Captura o tempo final
 
-            browser.close()
-            return f"{(end_time - start_time):.3f}s"
-    except Exception as e:
-        return f"N/A: {str(e)}"
+#             browser.close()
+#             return f"{(end_time - start_time):.3f}s"
+#     except Exception as e:
+#         return f"N/A: {str(e)}"
 
-# Exemplo de uso
-url = "https://chatgpt.com/c/67c5a201-4070-8003-98a4-07b06130b859"
-print(measure_load_time(url))
+# # Exemplo de uso
+# url = "https://chatgpt.com/c/67c5a201-4070-8003-98a4-07b06130b859"
+# print(measure_load_time(url))
+
+import requests
+result = {'status_http': 'error'}
+try:
+    url = f"https://23.227.38.65"
+    resp = requests.get(url, timeout=10, verify=False)
+    result["status_http"] = resp.status_code
+except requests.RequestException:
+    pass  
+
+print(result)
