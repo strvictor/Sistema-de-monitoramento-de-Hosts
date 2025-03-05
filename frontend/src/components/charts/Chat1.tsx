@@ -86,7 +86,7 @@ export function Chart1({ selectedHost }: Chart1Props) {
           // Transforma os dados agrupados no formato do gráfico
           const transformedData: ChartItem[] = Object.entries(groupedData).map(([status, count]) => ({
             status,
-            count,
+            count: count as number,
             fill: `var(--color-${status})`,
           }))
 
@@ -101,18 +101,19 @@ export function Chart1({ selectedHost }: Chart1Props) {
 
     fetchData()
   }, [selectedHost])
+
   return (
     <Card className="flex flex-col h-full">
       <CardHeader className="items-center pb-0">
         <CardTitle>Status das Requisições</CardTitle>
         <CardDescription>Distribuição dos códigos de status</CardDescription>
       </CardHeader>
-      <CardContent className="flex-1 pb-0">
+      <CardContent className="flex-1 pb-0 flex justify-center items-center">
         <ChartContainer
           config={chartConfig}
-          className="mx-auto aspect-square max-h-[250px]"
+          className="aspect-square max-h-[400px] w-full"
         >
-          <PieChart>
+          <PieChart width={400} height={400}>
             <ChartTooltip
               cursor={false}
               content={<ChartTooltipContent hideLabel />}
@@ -121,7 +122,8 @@ export function Chart1({ selectedHost }: Chart1Props) {
               data={chartData}
               dataKey="count"
               nameKey="status"
-              innerRadius={60}
+              innerRadius={80}
+              outerRadius={160}
               strokeWidth={5}
             >
               <Label
