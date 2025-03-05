@@ -33,7 +33,7 @@ import {
   TooltipTrigger,
 } from "./ui/tooltip"
 
-
+import styles from './styles/Dashboard.module.css'
 import { Chart1 } from "../components/charts/Chat1"
 import { Chart2 } from "./charts/Chat2"
 import { Chart3 } from "./charts/Chart3"
@@ -115,19 +115,23 @@ export default function Dashboard() {
               </motion.p> */}
               <TooltipProvider>
                 <Tooltip>
-                  <TooltipTrigger>
+                  <TooltipTrigger className="flex items-center gap-2">
                     <Info className="w-6 h-6 text-gray-500 cursor-pointer" />
                     Onde estou hospedado!</TooltipTrigger>
                   <TooltipContent>
-                    <p>Barcarena/PA</p>
+                    <p>Minhas requisições estão saindo de: Barcarena/PA</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
 
               <Select onValueChange={(value) => setSelectedHost(value)}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Selecione o seu Host" />
-                </SelectTrigger>
+              <SelectTrigger 
+                className={`w-[180px] ${
+                  !selectedHost ? styles.selectWarning : ''
+                }`}
+              >
+                <SelectValue placeholder="Selecione o seu Host" />
+              </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
                     <SelectLabel>Hosts</SelectLabel>
@@ -142,7 +146,7 @@ export default function Dashboard() {
             </div>
             <div className="w-full grid grid-cols-2 justify-center gap-4 pb-4 align-center">
               <div>
-                <Chart1/>
+                <Chart1 selectedHost={selectedHost}/>
               </div>
               <div>
                 <Chart2/>

@@ -410,7 +410,7 @@ def update_host(request, host_id):
 #     # Retorna os dados após o loop (fora do for)
 #     return JsonResponse(chartData, safe=False)
 
-from django.db.models import Avg, F, Func, FloatField, DateTimeField, Q
+from django.db.models import Avg, F, Func, FloatField, DateTimeField, Q, Count
 from django.db.models.functions import Cast
 from .models import HostHistory  # ajuste conforme seu app/modelo
 from rest_framework.decorators import api_view
@@ -435,6 +435,7 @@ def test(request, host_id):
         return user
     
     host = get_object_or_404(Host, id=host_id)
+    
     
     # Filtra registros com valores numéricos válidos
     dados = (
@@ -466,3 +467,43 @@ def test(request, host_id):
     ]
 
     return JsonResponse(chartData, safe=False)
+
+
+
+
+
+@api_view(['GET'])
+def status_code_stats(request, host_id):
+    valid, user = validate_token(request)
+    if not valid:
+        return user
+    
+    host = get_object_or_404(Host, id=host_id)
+    
+    # Filtra registros com status code válido
+    dados = (
+        HostHistory.objects
+        .filter(usuario=user, host=host)
+        .filter(
+            Q(status_code__regex=r'^\s*\d{3}\s*$')  # Aceita apenas códigos de 3 dígitos
+        )
+        .annotate(truncated_time=Trunc10Minute('ultima_atualizacao'))
+        .values('truncated_time', 'status_code')  # Agrupa por tempo e status
+        .annotate(
+            count=Count('id')  # Conta ocorrências por grupo
+        )
+        .order_by('truncated_time')
+    )
+
+    # Subtrai 3 horas e formata
+    formatted_data = []
+    for d in dados:
+        formatted_time = (d['truncated_time'] - timedelta(hours=3)).strftime('%H:%M')
+        
+        formatted_data.append({
+            'time': formatted_time,
+            'status_code': d['status_code'],
+            'count': d['count']
+        })
+
+    return JsonResponse(formatted_data, safe=False)

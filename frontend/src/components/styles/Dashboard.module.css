@@ -1,0 +1,22 @@
+/* filepath: /c:/Ambiente-de-Desenvolvimento/Sistema-de-monitoramento-de-Hosts/frontend/src/components/styles/Dashboard.module.css */
+
+@keyframes pulseRed {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    border-color: rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.3);
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    border-color: rgba(239, 68, 68, 0.7);
+  }
+}
+
+.selectWarning {
+  animation: pulseRed 1s infinite;
+  border: 2px solid rgb(239, 68, 68);
+  border-radius: 6px;
+}
