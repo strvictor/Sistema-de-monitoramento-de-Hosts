@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react"
 import { AppSidebar } from "./app-sidebar"
 import {
   Breadcrumb,
@@ -12,6 +13,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "./ui/sidebar"
+import { Info } from "lucide-react"
 
 import {
   Select,
@@ -22,13 +24,55 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { motion } from 'framer-motion'
+// import { motion } from 'framer-motion'
+import axios from "axios"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ui/tooltip"
 
 
 import { Chart1 } from "../components/charts/Chat1"
 import { Chart2 } from "./charts/Chat2"
 import { Chart3 } from "./charts/Chart3"
+
+// Definir a interface para os dados dos hosts
+interface Host {
+  id: string
+  name: string
+}
+
 export default function Dashboard() {
+  const [hosts, setHosts] = useState<Host[]>([])
+  const [selectedHost, setSelectedHost] = useState<string>("")
+
+  useEffect(() => {
+    const fetchHosts = async () => {
+      try {
+        const response = await axios.get("http://localhost:8000/api/list-hosts/", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        })
+        console.log("Resposta da API:", response.data)
+        setHosts(response.data.hosts)
+      } catch (error) {
+        console.error("Erro ao buscar hosts", error)
+      }
+    }
+
+    fetchHosts()
+  }, [])
+
+  // Exemplo de uso do selectedHost
+  useEffect(() => {
+    if (selectedHost) {
+      console.log(`Host selecionado: ${selectedHost}`)
+    }
+  }, [selectedHost])
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -55,47 +99,58 @@ export default function Dashboard() {
         </header>
         <div className="flex flex-1 flex-col p-4 pt-0">
           <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min p-4">
-          <div className="flex items-center justify-between pb-4">
+            <div className="flex items-center justify-between pb-4">
+              {/* <motion.p
+                className="text-sm font-bold"
+                animate={{
+                  color: ['#93c5fd', '#6ee7b7', '#fca5a5']
+                }}
+                transition={{
+                  duration: 6,
+                  repeat: Infinity,
+                  ease: 'easeInOut'
+                }}
+              >
+                Escolha um host para monitoramento inteligente e análise preditiva
+              </motion.p> */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Info className="w-6 h-6 text-gray-500 cursor-pointer" />
+                    Onde estou hospedado!</TooltipTrigger>
+                  <TooltipContent>
+                    <p>Barcarena/PA</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
-            <motion.p
-              className="text-sm font-bold"
-              animate={{
-                color: ['#93c5fd', '#6ee7b7', '#fca5a5']
-              }}
-              transition={{
-                duration: 6,
-                repeat: Infinity,
-                ease: 'easeInOut'
-              }}
-            >
-              Escolha um host para monitoramento inteligente e análise preditiva
-            </motion.p>
-
-            <Select>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Selecione o seu Host" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel>Hosts</SelectLabel>
-                  <SelectItem className="cursor-pointer" value="apple">Mercado Livre</SelectItem>
-                  <SelectItem className="cursor-pointer" value="banana">Facebook</SelectItem>
-                  <SelectItem className="cursor-pointer" value="blueberry">Instagram</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="w-full grid grid-cols-2 justify-center gap-4 pb-4 align-center">
-            <div>
-              <Chart1 />
+              <Select onValueChange={(value) => setSelectedHost(value)}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Selecione o seu Host" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Hosts</SelectLabel>
+                    {hosts.map((host) => (
+                      <SelectItem className="cursor-pointer" key={host.id} value={host.id}>
+                        {host.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-full grid grid-cols-2 justify-center gap-4 pb-4 align-center">
+              <div>
+                <Chart1/>
+              </div>
+              <div>
+                <Chart2/>
+              </div>
             </div>
             <div>
-              <Chart2 />
+              <Chart3 selectedHost={selectedHost} />
             </div>
-          </div>
-          <div>
-            < Chart3 />
-          </div>
           </div>
         </div>
       </SidebarInset>

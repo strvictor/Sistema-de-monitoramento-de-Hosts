@@ -13,5 +13,5 @@ urlpatterns = [
     path('list-hosts/', list_hosts, name='create_host'),
     path('delete-host/<int:host_id>', delete_host, name='delete_host'),
     path('update-host/<int:host_id>', update_host, name='update_host'),
-    path('test/', test, name='test'),
+    path('test/<int:host_id>', test, name='test'),
 ]

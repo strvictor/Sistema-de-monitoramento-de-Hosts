@@ -1,7 +1,8 @@
 "use client"
 
-import * as React from "react"
-import { CartesianGrid, Line, LineChart, XAxis } from "recharts"
+import { useEffect, useState, useMemo } from "react"
+import axios from "axios"
+import { CartesianGrid, Line, LineChart, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 
 import {
   Card,
@@ -13,9 +14,12 @@ import {
 import {
   ChartConfig,
   ChartContainer,
-  ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
+
+interface Chart3Props {
+  selectedHost: string
+}
 
 // Definir a interface para os dados da API
 interface ChartData {
@@ -35,31 +39,44 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function Chart3() {
-  const [chartData, setChartData] = React.useState<ChartData[]>([])
-  const [activeChart, setActiveChart] = React.useState<keyof typeof chartConfig>("avg_latency")
+export function Chart3({ selectedHost }: Chart3Props) {
+  const [chartData, setChartData] = useState<ChartData[]>([])
+  const [activeChart, setActiveChart] = useState<keyof typeof chartConfig>("avg_latency")
 
-  React.useEffect(() => {
-    async function fetchData() {
-      try {
-        const response = await fetch("http://127.0.0.1:8000/api/test/")
-        const data: ChartData[] = await response.json()
-        setChartData(data)
-      } catch (error) {
-        console.error("Erro ao buscar dados do gráfico:", error)
+  useEffect(() => {
+    if (selectedHost) {
+      const fetchData = async () => {
+        try {
+          const response = await axios.get(`http://localhost:8000/api/test/${selectedHost}`, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+            },
+          })
+          setChartData(response.data)
+        } catch (error) {
+          console.error("Erro ao buscar dados do gráfico:", error)
+        }
       }
+
+      fetchData()
     }
+  }, [selectedHost])
 
-    fetchData()
-  }, [])
-
-  const total = React.useMemo(
-    () => ({
+  const average = useMemo(() => {
+    if (chartData.length === 0) {
+      return { avg_latency: 0, load_time: 0 }; // Retorna 0 se não houver dados
+    }
+  
+    const total = {
       avg_latency: chartData.reduce((acc, curr) => acc + curr.avg_latency, 0),
       load_time: chartData.reduce((acc, curr) => acc + curr.load_time, 0),
-    }),
-    [chartData]
-  )
+    };
+  
+    return {
+      avg_latency: total.avg_latency / chartData.length, // Calcula a média
+      load_time: total.load_time / chartData.length,     // Calcula a média
+    };
+  }, [chartData]);
 
   return (
     <Card>
@@ -82,7 +99,7 @@ export function Chart3() {
                   {chartConfig[chart].label}
                 </span>
                 <span className="text-lg font-bold leading-none sm:text-3xl">
-                  {total[chart].toLocaleString()}
+                  {average[chart].toFixed(2)}
                 </span>
               </button>
             )
@@ -90,57 +107,49 @@ export function Chart3() {
         </div>
       </CardHeader>
       <CardContent className="px-2 sm:p-6">
-        <ChartContainer
-          config={chartConfig}
-          className="aspect-auto h-[250px] w-full"
-        >
-          <LineChart
-            accessibilityLayer
-            data={chartData}
-            margin={{
-              left: 12,
-              right: 12,
-            }}
+        <ResponsiveContainer width="100%" height={400}>
+          <ChartContainer
+            config={chartConfig}
+            className="aspect-auto h-[250px] w-full"
           >
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="time"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              minTickGap={32}
-              tickFormatter={(value) => {
-                const date = new Date(value)
-                return date.toLocaleDateString("pt-BR", {
-                  month: "short",
-                  day: "numeric",
-                })
+            <LineChart
+              data={chartData}
+              margin={{
+                top: 10,
+                right: 30,
+                left: 0,
+                bottom: 0,
               }}
-            />
-            <ChartTooltip
-              content={
-                <ChartTooltipContent
-                  className="w-[150px]"
-                  nameKey="views"
-                  labelFormatter={(value) => {
-                    return new Date(value).toLocaleDateString("pt-BR", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })
-                  }}
-                />
-              }
-            />
-            <Line
-              dataKey={activeChart}
-              type="monotone"
-              stroke={`var(--color-${activeChart})`}
-              strokeWidth={2}
-              dot={false}
-            />
-          </LineChart>
-        </ChartContainer>
+            >
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="time"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                minTickGap={32}
+                tickFormatter={(value) => value}
+              />
+              <YAxis />
+              <Tooltip
+                content={
+                  <ChartTooltipContent
+                    className="w-[150px]"
+                    nameKey="views"
+                    labelFormatter={(value) => value}
+                  />
+                }
+              />
+              <Line
+                dataKey={activeChart}
+                type="monotone"
+                stroke={`var(--color-${activeChart})`}
+                strokeWidth={2}
+                dot={false}
+              />
+            </LineChart>
+          </ChartContainer>
+        </ResponsiveContainer>
       </CardContent>
     </Card>
   )

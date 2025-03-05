@@ -9,7 +9,7 @@ import json, re
 from django_celery_beat.models import PeriodicTask, IntervalSchedule
 import json
 from .task_manager import save_historys
-from django.db import transaction
+from django.shortcuts import get_object_or_404
 
 
 def validate_token(request):
@@ -334,6 +334,42 @@ def update_host(request, host_id):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # from django.db.models import Avg, F, Func, FloatField
 # from django.db.models.functions import Cast, TruncHour  # Ajuste na importação do Cast
 # from .models import HostHistory  # ajuste conforme seu app/modelo
@@ -393,10 +429,17 @@ class RemoveUnit(Func):
     template = "%(function)s(%(expressions)s, '[^0-9\.]', '', 'g')"
 
 @api_view(['GET'])
-def test(request):
+def test(request, host_id):
+    valid, user = validate_token(request)
+    if not valid:
+        return user
+    
+    host = get_object_or_404(Host, id=host_id)
+    
     # Filtra registros com valores numéricos válidos
     dados = (
         HostHistory.objects
+        .filter(usuario=user, host=host)
         .filter(
             Q(avg_latency__regex=r'^\s*\d*\.?\d+\s*[a-zA-Z]*\s*$') &  # Aceita números com unidades
             Q(load_time__regex=r'^\s*\d*\.?\d+\s*[a-zA-Z]*\s*$')      # Aceita números com unidades
