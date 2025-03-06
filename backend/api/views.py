@@ -10,6 +10,7 @@ from django_celery_beat.models import PeriodicTask, IntervalSchedule
 import json
 from .task_manager import save_historys
 from django.shortcuts import get_object_or_404
+from datetime import timedelta
 
 
 def validate_token(request):
@@ -207,6 +208,7 @@ def list_hosts(request):
     valid, user = validate_token(request)
     if not valid:
         return user
+    
     data = {
         'hosts': [
             {
@@ -215,7 +217,8 @@ def list_hosts(request):
                 'host': h.host,
                 'frequency': h.frequencia_atualizacao.tipo,
                 'status': h.status,
-                'last_update': 'em desenvolvimento'
+                'last_update': (HostHistory.objects.filter(host=h.id, usuario=user).order_by('-ultima_atualizacao').first().ultima_atualizacao - timedelta(hours=3)).
+                strftime('%d/%m/%Y %H:%M')
             } for h in Host.objects.filter(usuario=user)
         ]
     }
