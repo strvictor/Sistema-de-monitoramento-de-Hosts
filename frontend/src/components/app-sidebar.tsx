@@ -1,9 +1,5 @@
 import * as React from "react";
-import {
-  Code,
-  ChartNoAxesCombined,
-  ScreenShare,
-} from "lucide-react";
+import { Code, ChartNoAxesCombined, Server } from "lucide-react"; // Movi o Server para o topo
 import axios from "axios";
 
 import { NavMain } from "@/components/nav-main";
@@ -20,8 +16,14 @@ import {
 
 import { useState, useEffect } from "react";
 
+interface Host {
+  id: string;
+  name: string;
+}
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [user, setUser] = useState({ name: "", email: "", avatar: "" });
+  const [hosts, setHosts] = useState<Host[]>([]);
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
@@ -46,10 +48,26 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       .catch((error) => {
         console.error("Erro ao obter usuário:", error.response?.data || error);
       });
+
+    // Buscar hosts
+    const fetchHosts = async () => {
+      try {
+        const response = await axios.get("http://localhost:8000/api/list-hosts/", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        });
+        console.log("Resposta da API:", response.data);
+        setHosts(response.data.hosts || response.data); // Garante compatibilidade caso a API retorne um array direto
+      } catch (error) {
+        console.error("Erro ao buscar hosts", error);
+      }
+    };
+
+    fetchHosts();
   }, []);
 
   const data = {
-    user: user,
     dev: [
       {
         name: "Paulo Victor",
@@ -64,44 +82,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: ChartNoAxesCombined,
         isActive: true,
         items: [
-          {
-            title: "Cadastrar Host",
-            url: "/cadastro-host",
-          },
-          {
-            title: "Dashboard",
-            url: "/dashboard",
-          },
-          {
-            title: "Configurações",
-            url: "/settings",
-          },
+          { title: "Cadastrar Host", url: "/cadastro-host" },
+          { title: "Dashboard", url: "/dashboard" },
+          { title: "Configurações", url: "/settings" },
         ],
       },
     ],
-    hosts: [
-      {
-        name: "Google",
-        url: "/host/<id>",
-        icon: ScreenShare,
-      },
-      {
-        name: "Facebook",
-        url: "/host/<id>",
-        icon: ScreenShare,
-      },
-      {
-        name: "Youtube",
-        url: "/host/<id>",
-        icon: ScreenShare,
-      },
-      {
-        name: "Mercado Livre",
-        url: "/host/<id>",
-        icon: ScreenShare,
-      },
-    ],
   };
+
+  // Mapeia os hosts para o formato esperado
+  const formattedHosts = hosts.map((host) => ({
+    name: host.name,
+    url: `/hosts/${host.id}`, // Define um URL fictício, ajuste conforme necessário
+    icon: Server, // Usa um ícone genérico para os hosts
+  }));
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -110,10 +104,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects projects={data.hosts} />
+        <NavProjects projects={formattedHosts} /> {/* Agora está no formato correto */}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={user} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
