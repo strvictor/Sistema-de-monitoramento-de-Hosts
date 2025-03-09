@@ -209,6 +209,7 @@ def list_hosts(request):
     if not valid:
         return user
     
+
     data = {
         'hosts': [
             {
@@ -217,8 +218,15 @@ def list_hosts(request):
                 'host': h.host,
                 'frequency': h.frequencia_atualizacao.tipo,
                 'status': h.status,
-                'last_update': (HostHistory.objects.filter(host=h.id, usuario=user).order_by('-ultima_atualizacao').first().ultima_atualizacao - timedelta(hours=3)).
-                strftime('%d/%m/%Y %H:%M')
+                'last_update': (
+                    (HostHistory.objects.filter(host=h.id, usuario=user)
+                    .order_by('-ultima_atualizacao')
+                    .first()
+                    .ultima_atualizacao - timedelta(hours=3))
+                    .strftime('%d/%m/%Y %H:%M') 
+                    if HostHistory.objects.filter(host=h.id, usuario=user).exists() 
+                    else "-"
+                )
             } for h in Host.objects.filter(usuario=user)
         ]
     }

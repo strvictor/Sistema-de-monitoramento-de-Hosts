@@ -1,19 +1,15 @@
-import { useState, useEffect } from "react"
-import { AppSidebar } from "./app-sidebar"
+import { useState, useEffect } from "react";
+import { AppSidebar } from "./app-sidebar";
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { Separator } from "./ui/separator"
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "./ui/sidebar"
-import { Info } from "lucide-react"
+} from "@/components/ui/breadcrumb";
+import { Separator } from "./ui/separator";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "./ui/sidebar";
+import { Info } from "lucide-react";
 
 import {
   Select,
@@ -23,55 +19,58 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 // import { motion } from 'framer-motion'
-import axios from "axios"
+import axios from "axios";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "./ui/tooltip"
+} from "./ui/tooltip";
 
-import styles from './styles/Dashboard.module.css'
-import { Chart1 } from "../components/charts/Chat1"
-import { Chart2 } from "./charts/Chat2"
-import { Chart3 } from "./charts/Chart3"
+import styles from "./styles/Dashboard.module.css";
+import { Chart1 } from "../components/charts/Chat1";
+// import { Chart2 } from "./charts/Chat2"
+import { Chart3 } from "./charts/Chart3";
 
 // Definir a interface para os dados dos hosts
 interface Host {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
 
 export default function Dashboard() {
-  const [hosts, setHosts] = useState<Host[]>([])
-  const [selectedHost, setSelectedHost] = useState<string>("")
+  const [hosts, setHosts] = useState<Host[]>([]);
+  const [selectedHost, setSelectedHost] = useState<string>("");
 
   useEffect(() => {
     const fetchHosts = async () => {
       try {
-        const response = await axios.get("http://localhost:8000/api/list-hosts/", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        })
-        console.log("Resposta da API:", response.data)
-        setHosts(response.data.hosts)
+        const response = await axios.get(
+          "http://localhost:8000/api/list-hosts/",
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+            },
+          }
+        );
+        console.log("Resposta da API:", response.data);
+        setHosts(response.data.hosts);
       } catch (error) {
-        console.error("Erro ao buscar hosts", error)
+        console.error("Erro ao buscar hosts", error);
       }
-    }
+    };
 
-    fetchHosts()
-  }, [])
+    fetchHosts();
+  }, []);
 
   // Exemplo de uso do selectedHost
   useEffect(() => {
     if (selectedHost) {
-      console.log(`Host selecionado: ${selectedHost}`)
+      console.log(`Host selecionado: ${selectedHost}`);
     }
-  }, [selectedHost])
+  }, [selectedHost]);
 
   return (
     <SidebarProvider>
@@ -98,7 +97,7 @@ export default function Dashboard() {
           </div>
         </header>
         <div className="flex flex-1 flex-col p-4 pt-0">
-          <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min p-4">
+          <div className="flex-1 rounded-xl bg-muted/50 md:min-h-min p-4">
             <div className="flex items-center justify-between pb-4">
               {/* <motion.p
                 className="text-sm font-bold"
@@ -117,7 +116,8 @@ export default function Dashboard() {
                 <Tooltip>
                   <TooltipTrigger className="flex items-center gap-2">
                     <Info className="w-6 h-6 text-gray-500 cursor-pointer" />
-                    Onde estou hospedado!</TooltipTrigger>
+                    Onde estou hospedado!
+                  </TooltipTrigger>
                   <TooltipContent>
                     <p>Minhas requisições estão saindo de: Barcarena/PA</p>
                   </TooltipContent>
@@ -125,18 +125,22 @@ export default function Dashboard() {
               </TooltipProvider>
 
               <Select onValueChange={(value) => setSelectedHost(value)}>
-              <SelectTrigger 
-                className={`w-[180px] ${
-                  !selectedHost ? styles.selectWarning : ''
-                }`}
-              >
-                <SelectValue placeholder="Selecione o seu Host" />
-              </SelectTrigger>
+                <SelectTrigger
+                  className={`w-[180px] ${
+                    !selectedHost ? styles.selectWarning : ""
+                  }`}
+                >
+                  <SelectValue placeholder="Selecione o seu Host" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
                     <SelectLabel>Hosts</SelectLabel>
                     {hosts.map((host) => (
-                      <SelectItem className="cursor-pointer" key={host.id} value={host.id}>
+                      <SelectItem
+                        className="cursor-pointer"
+                        key={host.id}
+                        value={host.id}
+                      >
                         {host.name}
                       </SelectItem>
                     ))}
@@ -146,11 +150,9 @@ export default function Dashboard() {
             </div>
             <div className="w-full grid grid-cols-2 justify-center gap-4 pb-4 align-center">
               <div>
-                <Chart1 selectedHost={selectedHost}/>
+                <Chart1 selectedHost={selectedHost} />
               </div>
-              <div>
-                <Chart2/>
-              </div>
+              <div>{/* <Chart2/> */}</div>
             </div>
             <div>
               <Chart3 selectedHost={selectedHost} />
@@ -159,5 +161,5 @@ export default function Dashboard() {
         </div>
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 }
