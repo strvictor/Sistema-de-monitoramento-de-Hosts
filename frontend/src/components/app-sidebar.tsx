@@ -1,6 +1,6 @@
 import * as React from "react";
-import { Code, ChartNoAxesCombined, Server } from "lucide-react"; // Movi o Server para o topo
-import axios from "axios";
+import { Code, ChartNoAxesCombined, Server } from "lucide-react";
+import api from "../axiosConfig";
 
 import { NavMain } from "@/components/nav-main";
 import { NavProjects } from "@/components/nav-projects";
@@ -19,52 +19,51 @@ import { useState, useEffect } from "react";
 interface Host {
   id: string;
   name: string;
+  host: string;
+  status: boolean;
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [user, setUser] = useState({ name: "", email: "", avatar: "" });
   const [hosts, setHosts] = useState<Host[]>([]);
 
-  useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-
-    if (!token) {
-      console.error("Token não encontrado. Faça login novamente.");
-      return;
+  // Função para buscar hosts
+  const fetchHosts = async () => {
+    try {
+      const response = await api.get("/list-hosts/");
+      console.log("Resposta da API de hosts:", response.data);
+      const hostsData = response.data.hosts || [];
+      setHosts(hostsData);
+    } catch (error) {
+      console.error("Erro ao buscar hosts:", error);
     }
+  };
 
-    axios
-      .get("http://localhost:8000/api/user-data/", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((response) => {
-        console.log("Usuário autenticado:", response.data);
+  useEffect(() => {
+    // Buscar dados do usuário
+    const fetchUserData = async () => {
+      try {
+        const response = await api.get("/user-data/");
+        console.log("Dados do usuário:", response.data);
         setUser({
           name: response.data.name,
           email: response.data.email,
           avatar: "https://avatars1.githubusercontent.com/u/250480",
         });
-      })
-      .catch((error) => {
-        console.error("Erro ao obter usuário:", error.response?.data || error);
-      });
-
-    // Buscar hosts
-    const fetchHosts = async () => {
-      try {
-        const response = await axios.get("http://localhost:8000/api/list-hosts/", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        });
-        console.log("Resposta da API:", response.data);
-        setHosts(response.data.hosts || response.data); // Garante compatibilidade caso a API retorne um array direto
       } catch (error) {
-        console.error("Erro ao buscar hosts", error);
+        console.error("Erro ao obter usuário:", error);
       }
     };
 
+    fetchUserData();
     fetchHosts();
+
+    // Adicionar listener para atualização dos hosts
+    window.addEventListener("hostsUpdated", fetchHosts);
+
+    return () => {
+      window.removeEventListener("hostsUpdated", fetchHosts);
+    };
   }, []);
 
   const data = {
@@ -90,11 +89,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     ],
   };
 
-  // Mapeia os hosts para o formato esperado
+  // Mapeia os hosts para o formato esperado pelo NavProjects
   const formattedHosts = hosts.map((host) => ({
-    name: host.name,
-    url: `/hosts/${host.id}`, // Define um URL fictício, ajuste conforme necessário
-    icon: Server, // Usa um ícone genérico para os hosts
+    name: `${host.name} (${host.host})`,
+    url: `/hosts/${host.id}`,
+    icon: Server,
+    status: host.status,
   }));
 
   return (
@@ -104,7 +104,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects projects={formattedHosts} /> {/* Agora está no formato correto */}
+        <NavProjects projects={formattedHosts} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />

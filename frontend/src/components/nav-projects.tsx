@@ -14,6 +14,7 @@ export function NavProjects({
     name: string;
     url: string;
     icon: LucideIcon;
+    status?: boolean;
   }[];
 }) {
   return (
@@ -23,8 +24,12 @@ export function NavProjects({
         {projects.map((item) => (
           <SidebarMenuItem key={item.name}>
             <SidebarMenuButton asChild>
-              <item.icon />
-              <span>{item.name}</span>
+              <div className="flex items-center gap-2">
+                <item.icon
+                  className={item.status ? "text-green-500" : "text-red-500"}
+                />
+                <span>{item.name}</span>
+              </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
         ))}

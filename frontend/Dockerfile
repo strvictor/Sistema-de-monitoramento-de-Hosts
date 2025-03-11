@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Copie os arquivos de dependências e instale-os
 COPY frontend/package.json frontend/package-lock.json ./
-RUN npm install --include=dev
+RUN npm install
 # Instala o TypeScript e Vite globalmente
 RUN npm install -g typescript vite
 

@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { Label, Pie, PieChart } from "recharts"
-import axios from "axios"
+import { useEffect, useState } from "react";
+import { Label, Pie, PieChart } from "recharts";
+import axios from "axios";
 
 import {
   Card,
@@ -11,33 +11,34 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/components/ui/chart"
+} from "@/components/ui/chart";
 
 interface StatusData {
-  time: string
-  status_code: string
-  count: number
+  time: string;
+  status_code: string;
+  count: number;
 }
 
 interface ChartItem {
-  status: string
-  count: number
-  fill: string
+  status: string;
+  count: number;
+  fill: string;
 }
 
 interface Chart1Props {
-  selectedHost: string
+  selectedHost: string;
 }
 
 const chartConfig: ChartConfig = {
   count: {
     label: "Requisições",
+    color: "hsl(var(--primary))",
   },
   "200": {
     label: "Status 200",
@@ -55,11 +56,11 @@ const chartConfig: ChartConfig = {
     label: "Status 500",
     color: "hsl(var(--chart-4))",
   },
-} satisfies ChartConfig
+} satisfies ChartConfig;
 
 export function Chart1({ selectedHost }: Chart1Props) {
-  const [chartData, setChartData] = useState<ChartItem[]>([])
-  const [totalRequests, setTotalRequests] = useState(0)
+  const [chartData, setChartData] = useState<ChartItem[]>([]);
+  const [totalRequests, setTotalRequests] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -72,35 +73,43 @@ export function Chart1({ selectedHost }: Chart1Props) {
                 Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
               },
             }
-          )
+          );
 
           // Agrupa os dados por status_code e soma os counts
-          const groupedData = response.data.reduce((acc: { [key: string]: number }, curr) => {
-            if (!acc[curr.status_code]) {
-              acc[curr.status_code] = 0
-            }
-            acc[curr.status_code] += curr.count
-            return acc
-          }, {})
+          const groupedData = response.data.reduce(
+            (acc: { [key: string]: number }, curr) => {
+              if (!acc[curr.status_code]) {
+                acc[curr.status_code] = 0;
+              }
+              acc[curr.status_code] += curr.count;
+              return acc;
+            },
+            {}
+          );
 
           // Transforma os dados agrupados no formato do gráfico
-          const transformedData: ChartItem[] = Object.entries(groupedData).map(([status, count]) => ({
-            status,
-            count: count as number,
-            fill: `var(--color-${status})`,
-          }))
+          const transformedData: ChartItem[] = Object.entries(groupedData).map(
+            ([status, count]) => ({
+              status,
+              count: count as number,
+              fill: `var(--color-${status})`,
+            })
+          );
 
-          setChartData(transformedData)
-          const total = transformedData.reduce((acc, curr) => acc + curr.count, 0)
-          setTotalRequests(total)
+          setChartData(transformedData);
+          const total = transformedData.reduce(
+            (acc, curr) => acc + curr.count,
+            0
+          );
+          setTotalRequests(total);
         } catch (error) {
-          console.error("Erro ao buscar dados de status:", error)
+          console.error("Erro ao buscar dados de status:", error);
         }
       }
-    }
+    };
 
-    fetchData()
-  }, [selectedHost])
+    fetchData();
+  }, [selectedHost]);
 
   return (
     <Card className="flex flex-col h-full">
@@ -114,7 +123,6 @@ export function Chart1({ selectedHost }: Chart1Props) {
           className="aspect-square max-h-[400px] w-full"
         >
           <div>
-
             <PieChart width={400} height={400}>
               <ChartTooltip
                 cursor={false}
@@ -126,7 +134,7 @@ export function Chart1({ selectedHost }: Chart1Props) {
                 nameKey="status"
                 innerRadius={80}
                 outerRadius={160}
-                strokeWidth={5}
+                stroke="none"
               >
                 <Label
                   content={({ viewBox }) => {
@@ -153,7 +161,7 @@ export function Chart1({ selectedHost }: Chart1Props) {
                             Requisições
                           </tspan>
                         </text>
-                      )
+                      );
                     }
                   }}
                 />
@@ -171,5 +179,5 @@ export function Chart1({ selectedHost }: Chart1Props) {
         </div>
       </CardFooter>
     </Card>
-  )
+  );
 }

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useState, useEffect, useCallback } from "react";
-import axios from "axios";
+import api from "../axiosConfig";
 import { toast } from "sonner";
 import {
   ColumnDef,
@@ -144,11 +144,7 @@ async function handleDeleteHost(hostId: string) {
     return;
   }
   try {
-    await axios.delete(`http://localhost:8000/api/delete-host/${hostId}`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-      },
-    });
+    await api.delete(`/delete-host/${hostId}`);
     toast.success("Host deletado com sucesso!");
     window.dispatchEvent(new Event("hostsUpdated"));
   } catch (error: any) {
@@ -178,14 +174,7 @@ export function ComponentCreateHost() {
   // Função para buscar hosts no backend
   const fetchHosts = useCallback(async () => {
     try {
-      const response = await axios.get(
-        "http://localhost:8000/api/list-hosts/",
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        }
-      );
+      const response = await api.get("/list-hosts/");
       const transformedHosts = response.data.hosts.map((h: any) => ({
         id: h.id.toString(),
         nome: h.name,
@@ -246,26 +235,14 @@ export function ComponentCreateHost() {
 
       if (editingHost) {
         // Atualização do host
-        await axios.put(
-          `http://localhost:8000/api/update-host/${editingHost.id}`,
-          data,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-            },
-          }
-        );
+        await api.put(`/update-host/${editingHost.id}`, data);
         toast.success("Host atualizado com sucesso!", {
           description: `O host ${nome} foi atualizado com sucesso.`,
         });
         setEditingHost(null);
       } else {
         // Criação do host
-        await axios.post("http://localhost:8000/api/create-host/", data, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        });
+        await api.post("/create-host/", data);
         toast.success("Host registrado com sucesso!", {
           description: `O host ${nome} foi adicionado com sucesso.`,
         });
@@ -287,7 +264,7 @@ export function ComponentCreateHost() {
       );
       if (errorAlert) {
         errorAlert.querySelector(".text-red-100")!.textContent =
-          error.response.data.error;
+          error.response?.data?.error || "Erro ao processar a solicitação";
         errorAlert.classList.remove("hidden");
       }
     }

@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { useEffect, useState, useMemo } from "react"
-import axios from "axios"
-import { CartesianGrid, Line, LineChart, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
+import * as React from "react";
+import api from "@/axiosConfig";
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 
 import {
   Card,
@@ -10,77 +10,76 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
+
 import {
   ChartConfig,
   ChartContainer,
+  ChartTooltip,
   ChartTooltipContent,
-} from "@/components/ui/chart"
+} from "@/components/ui/chart";
 
 interface Chart3Props {
-  selectedHost: string
+  selectedHost: string;
 }
 
 interface ChartData {
-  time: string
-  avg_latency: number
-  load_time: number
+  time: string;
+  avg_latency: number;
+  load_time: number;
 }
 
 const chartConfig = {
   avg_latency: {
     label: "Latência Média",
-    color: "hsl(var(--chart-1))",
+    color: "hsl(var(--primary))",
   },
   load_time: {
     label: "Tempo de Carregamento",
-    color: "hsl(var(--chart-2))",
+    color: "hsl(var(--secondary))",
   },
-} satisfies ChartConfig
+} satisfies ChartConfig;
 
 export function Chart3({ selectedHost }: Chart3Props) {
-  const [chartData, setChartData] = useState<ChartData[]>([])
-  const [activeChart, setActiveChart] = useState<keyof typeof chartConfig>("avg_latency")
-  const [loading, setLoading] = useState<boolean>(false)
-  const [error, setError] = useState<string | null>(null)
+  const [chartData, setChartData] = React.useState<ChartData[]>([]);
+  const [activeChart, setActiveChart] =
+    React.useState<keyof typeof chartConfig>("avg_latency");
+  const [loading, setLoading] = React.useState<boolean>(false);
+  const [error, setError] = React.useState<string | null>(null);
 
-  useEffect(() => {
-    if (!selectedHost) return
+  React.useEffect(() => {
+    if (!selectedHost) return;
 
     const fetchData = async () => {
-      setLoading(true)
-      setError(null) // Resetando erro ao iniciar a requisição
+      setLoading(true);
+      setError(null);
       try {
-        const response = await axios.get(`http://127.0.0.1:8000/api/test/${selectedHost}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        })
-        setChartData(response.data)
+        const response = await api.get(`/test/${selectedHost}`);
+        setChartData(response.data);
       } catch (err) {
-        console.error("Erro ao buscar dados do gráfico:", err)
-        setError("Erro ao carregar os dados")
+        console.error("Erro ao buscar dados do gráfico:", err);
+        setError("Erro ao carregar os dados");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchData()
-  }, [selectedHost])
+    fetchData();
+  }, [selectedHost]);
 
-  const average = useMemo(() => {
-    if (chartData.length === 0) return { avg_latency: 0, load_time: 0 }
+  const average = React.useMemo(() => {
+    if (chartData.length === 0) return { avg_latency: 0, load_time: 0 };
 
     const total = {
       avg_latency: chartData.reduce((acc, curr) => acc + curr.avg_latency, 0),
       load_time: chartData.reduce((acc, curr) => acc + curr.load_time, 0),
-    }
+    };
 
     return {
       avg_latency: total.avg_latency / chartData.length,
       load_time: total.load_time / chartData.length,
-    }
-  }, [chartData])
+    };
+  }, [chartData]);
 
   if (loading) {
     return (
@@ -89,7 +88,7 @@ export function Chart3({ selectedHost }: Chart3Props) {
           <CardTitle>Carregando...</CardTitle>
         </CardHeader>
       </Card>
-    )
+    );
   }
 
   if (error) {
@@ -100,57 +99,76 @@ export function Chart3({ selectedHost }: Chart3Props) {
         </CardHeader>
         <CardContent>{error}</CardContent>
       </Card>
-    )
+    );
   }
 
   return (
     <Card>
       <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
         <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6">
-          <CardTitle>Latência e Tempo de Carregamento</CardTitle>
-          <CardDescription>Dados dos últimos períodos</CardDescription>
+          <CardTitle>Métricas de Performance</CardTitle>
+          <CardDescription>Monitoramento em tempo real do host</CardDescription>
         </div>
         <div className="flex">
-          {["avg_latency", "load_time"].map((key) => {
-            const chart = key as keyof typeof chartConfig
-            return (
+          {(Object.keys(chartConfig) as Array<keyof typeof chartConfig>).map(
+            (key) => (
               <button
-                key={chart}
-                data-active={activeChart === chart}
+                key={key}
+                data-active={activeChart === key}
                 className="flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border-t-0 sm:px-8 sm:py-6"
-                onClick={() => setActiveChart(chart)}
+                onClick={() => setActiveChart(key)}
               >
-                <span className="text-xs text-muted-foreground">{chartConfig[chart].label}</span>
+                <span className="text-xs text-muted-foreground">
+                  {chartConfig[key].label}
+                </span>
                 <span className="text-lg font-bold leading-none sm:text-3xl">
-                  {average[chart].toFixed(2)}
+                  {average[key].toFixed(2)}ms
                 </span>
               </button>
             )
-          })}
+          )}
         </div>
       </CardHeader>
       <CardContent className="px-2 sm:p-6">
-        <ResponsiveContainer width="100%" height={400}>
-          <ChartContainer config={chartConfig} className="aspect-auto h-[250px] w-full">
-            <div>
-
-              <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                <CartesianGrid vertical={false} />
-                <XAxis dataKey="time" tickLine={false} axisLine={false} tickMargin={8} minTickGap={32} />
-                <YAxis />
-                <Tooltip content={<ChartTooltipContent className="w-[150px]" />} />
-                <Line
-                  dataKey={activeChart}
-                  type="monotone"
-                  stroke={`var(--color-${activeChart})`}
-                  strokeWidth={2}
-                  dot={false}
-                />
-              </LineChart>
-            </div>
-          </ChartContainer>
-        </ResponsiveContainer>
+        <ChartContainer
+          config={chartConfig}
+          className="aspect-auto h-[400px] w-full"
+        >
+          <LineChart
+            data={chartData}
+            margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <XAxis
+              dataKey="time"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              minTickGap={32}
+              fontSize={12}
+            />
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              fontSize={12}
+              tickFormatter={(value) => `${value}ms`}
+            />
+            <ChartTooltip
+              content={<ChartTooltipContent className="w-[200px]" />}
+            />
+            <Line
+              type="monotone"
+              dataKey={activeChart}
+              stroke={`var(--color-${activeChart})`}
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 4, strokeWidth: 2 }}
+              isAnimationActive={true}
+            />
+          </LineChart>
+        </ChartContainer>
       </CardContent>
     </Card>
-  )
+  );
 }
