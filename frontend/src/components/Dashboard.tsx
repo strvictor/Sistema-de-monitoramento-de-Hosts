@@ -118,7 +118,7 @@ export default function Dashboard() {
                     <Info className="w-6 h-6 text-gray-500 cursor-pointer" />
                     Onde estou hospedado!
                   </TooltipTrigger>
-                  <TooltipContent>
+                  <TooltipContent className="bg-gray-800 text-sm">
                     <p>Minhas requisições estão saindo de: Barcarena/PA</p>
                   </TooltipContent>
                 </Tooltip>
@@ -152,7 +152,7 @@ export default function Dashboard() {
               <div>
                 <Chart1 selectedHost={selectedHost} />
               </div>
-              <div>{/* <Chart2/> */}</div>
+              <div className="text-center text-gray-500">Em desenvolvimento</div>
             </div>
             <div>
               <Chart3 selectedHost={selectedHost} />
