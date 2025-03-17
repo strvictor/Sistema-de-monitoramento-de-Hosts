@@ -1,7 +1,6 @@
 "use client"
 
 import {
-  BadgeCheck,
   Bell,
   ChevronsUpDown,
   LogOut,
@@ -79,14 +78,15 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem className="cursor-pointer">
-                <BadgeCheck />
-                Conta
-              </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer">
-                <Bell />
-                Notificações
-              </DropdownMenuItem>
+              <div onClick={() => {
+                window.location.href = "/settings";
+              }}>
+                <DropdownMenuItem className="cursor-pointer">
+                  <Bell />
+                  Notificações
+                </DropdownMenuItem>
+
+              </div>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <div onClick={() => {

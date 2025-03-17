@@ -7,12 +7,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 import json, re
 from django_celery_beat.models import PeriodicTask, IntervalSchedule
-import json
 from .task_manager import save_historys
 from django.shortcuts import get_object_or_404
 from datetime import timedelta
 from .models import UserSettings
-
+import requests
 
 def validate_token(request):
     auth = JWTAuthentication()
@@ -523,7 +522,7 @@ def status_code_stats(request, host_id):
 
 
 @api_view(['GET', 'POST'])
-def settings(request):
+def user_settings(request):
     valid, user = validate_token(request)
     if not valid:
         return user
@@ -589,3 +588,22 @@ def settings(request):
             'responseTimeThreshold': response_time_threshold,
             'notifyOnStatus': notify_on_status
         }, status=201)
+        
+        
+@api_view(['GET'])
+def get_location_server(request):
+    valid, user = validate_token(request)
+    if not valid:
+        return user
+    
+    response = requests.get("https://ipinfo.io/json").json()
+
+    cidade = response.get("city")
+    regiao = response.get("region")
+    pais = response.get("country")
+
+    return JsonResponse({
+        'cidade': cidade,
+        'regiao': regiao,
+        'pais': pais,
+    }, status=200)

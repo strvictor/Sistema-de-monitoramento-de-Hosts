@@ -16,5 +16,6 @@ urlpatterns = [
     path('update-host/<int:host_id>', update_host, name='update_host'),
     path('test/<int:host_id>', test, name='test'),
     path('test-status/<int:host_id>', status_code_stats, name='test-status'),
-    path('settings/', settings, name='settings'),
+    path('settings/', user_settings, name='user_settings'),
+    path('location-server/', get_location_server, name='get_location_server'),
 ]

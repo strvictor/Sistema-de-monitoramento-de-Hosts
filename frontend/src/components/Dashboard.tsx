@@ -20,8 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-// import { motion } from 'framer-motion'
-import axios from "axios";
+
 import {
   Tooltip,
   TooltipContent,
@@ -33,6 +32,7 @@ import styles from "./styles/Dashboard.module.css";
 import { Chart1 } from "../components/charts/Chat1";
 // import { Chart2 } from "./charts/Chat2"
 import { Chart3 } from "./charts/Chart3";
+import api from "@/axiosConfig";
 
 // Definir a interface para os dados dos hosts
 interface Host {
@@ -43,12 +43,13 @@ interface Host {
 export default function Dashboard() {
   const [hosts, setHosts] = useState<Host[]>([]);
   const [selectedHost, setSelectedHost] = useState<string>("");
+  const [location, setLocation] = useState<string>("");
 
   useEffect(() => {
     const fetchHosts = async () => {
       try {
-        const response = await axios.get(
-          "http://localhost:8000/api/list-hosts/",
+        const response = await api.get(
+          "list-hosts/",
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
@@ -72,6 +73,19 @@ export default function Dashboard() {
     }
   }, [selectedHost]);
 
+  useEffect(() => {
+    const fetchLocation = async () => {
+      try {
+        const response = await api.get("location-server/");
+        setLocation(response.data.cidade + ", " + response.data.regiao + ", " + response.data.pais);
+      } catch (error) {
+        console.error("Erro ao buscar localização", error);
+      }
+    };
+
+    fetchLocation();
+  }, []);
+  
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -118,8 +132,8 @@ export default function Dashboard() {
                     <Info className="w-6 h-6 text-gray-500 cursor-pointer" />
                     Onde estou hospedado!
                   </TooltipTrigger>
-                  <TooltipContent className="bg-gray-800 text-sm">
-                    <p>Minhas requisições estão saindo de: Barcarena/PA</p>
+                  <TooltipContent className="bg-gray-800 text-sm text-gray-100">
+                    <p>Minhas requisições estão saindo de: {location}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
