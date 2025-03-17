@@ -11,6 +11,7 @@ import json
 from .task_manager import save_historys
 from django.shortcuts import get_object_or_404
 from datetime import timedelta
+from .models import UserSettings
 
 
 def validate_token(request):
@@ -518,3 +519,73 @@ def status_code_stats(request, host_id):
         })
 
     return JsonResponse(formatted_data, safe=False)
+
+
+
+@api_view(['GET', 'POST'])
+def settings(request):
+    valid, user = validate_token(request)
+    if not valid:
+        return user
+    
+    # Obter o email do usuário para uso nos alertas
+    user_email = user.email if hasattr(user, 'email') else ""
+    
+    # Processar as configurações do usuário
+    if request.method == 'GET':
+
+        try:
+            user_settings = UserSettings.objects.get(user=user)
+            return_user_settings = {
+                'emailAlerts': user_settings.active,
+                'email': user_email,
+                'downTimeThreshold': user_settings.down_time_threshold,
+                'responseTimeThreshold': user_settings.response_time_threshold,
+                'notifyOnStatus': user_settings.notify_on_status,
+                'user': {
+                    'email': user_email,
+                    'name': user.username if hasattr(user, 'username') else ""
+                }
+            }
+            
+        except UserSettings.DoesNotExist:
+            return_user_settings = {
+                'active': False,
+                'email': user_email,
+                'downTimeThreshold': 5,
+                'responseTimeThreshold': 2000,
+                'notifyOnStatus': ['500', '502', '503', '504'],
+            }
+        # Retornar as configurações para o frontend
+        return JsonResponse(return_user_settings, status=200)
+    
+    elif request.method == 'POST':
+        # Processar os dados enviados pelo frontend
+        data = json.loads(request.body)
+        
+        email_alerts = data.get('emailAlerts', False)
+        email = data.get('email', user_email)  # Usar o email do usuário como padrão
+        down_time_threshold = data.get('downTimeThreshold', 5)
+        response_time_threshold = data.get('responseTimeThreshold', 2000)
+        notify_on_status = data.get('notifyOnStatus', [])
+
+        settings_user, created = UserSettings.objects.update_or_create(
+            user=user,
+            defaults={
+                "active": email_alerts,
+                "down_time_threshold": down_time_threshold,
+                "response_time_threshold": response_time_threshold,
+                "notify_on_status": notify_on_status
+            }
+        )
+
+        
+        # Retornar uma resposta de sucesso
+        return JsonResponse({
+            'success': 'Configurações atualizadas com sucesso!',
+            'emailAlerts': email_alerts,
+            'email': email,
+            'downTimeThreshold': down_time_threshold,
+            'responseTimeThreshold': response_time_threshold,
+            'notifyOnStatus': notify_on_status
+        }, status=201)

@@ -44,3 +44,13 @@ class HostHistory(models.Model):
 
     def __str__(self):
         return f"Host: {self.host.nome} | Status: {self.status_code} | Latência: {self.avg_latency}ms | Ultima Att: {self.ultima_atualizacao}"
+
+class UserSettings(models.Model):
+    active = models.BooleanField(default=False)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='settings')
+    down_time_threshold = models.IntegerField(default=5)  # em minutos
+    response_time_threshold = models.IntegerField(default=2000)  # em milissegundos
+    notify_on_status = models.JSONField(default=list)  # lista de códigos de status
+
+    def __str__(self):
+        return f'Configurações de {self.user.username}'

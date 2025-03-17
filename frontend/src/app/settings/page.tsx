@@ -44,6 +44,9 @@ interface AlertSettings {
 
 export default function SettingsPage() {
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string>("");
   const [settings, setSettings] = useState<AlertSettings>({
     emailAlerts: false,
     email: "",
@@ -55,11 +58,38 @@ export default function SettingsPage() {
   useEffect(() => {
     // Carregar configurações do usuário
     const loadSettings = async () => {
+      setIsLoading(true);
+      setError(null);
       try {
-        const response = await api.get("/settings");
-        setSettings(response.data);
+        // Buscar as configurações do usuário no backend
+        const response = await api.get("/settings/");
+        console.log(response.data);
+        if (response.data && response.data.user) {
+          setUserEmail(response.data.user.email || "");
+        }
+
+        // Atualizar as configurações com os dados do backend
+        setSettings({
+          ...settings,
+          ...response.data,
+          // Garantir que sempre tenhamos valores padrão para propriedades que podem estar ausentes
+          downTimeThreshold: response.data.downTimeThreshold || "5",
+          responseTimeThreshold: response.data.responseTimeThreshold || "2000",
+          notifyOnStatus: response.data.notifyOnStatus || [
+            "500",
+            "502",
+            "503",
+            "504",
+          ],
+        });
+
+        setIsLoading(false);
       } catch (error) {
         console.error("Erro ao carregar configurações:", error);
+        setError(
+          "Falha ao carregar configurações. Por favor, tente novamente mais tarde."
+        );
+        setIsLoading(false);
       }
     };
 
@@ -68,7 +98,13 @@ export default function SettingsPage() {
 
   const handleSaveSettings = async () => {
     try {
-      await api.post("/settings", settings);
+      // Enviar configurações para o backend
+      await api.post("/settings/", {
+        ...settings,
+        // Garantir que o email da conta seja usado para as notificações
+        email: userEmail,
+      });
+
       toast({
         title: "Configurações salvas",
         description:
@@ -85,11 +121,37 @@ export default function SettingsPage() {
     }
   };
 
+  if (error) {
+    return (
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
+          <div className="flex flex-col items-center justify-center min-h-screen">
+            <Card className="w-full max-w-md">
+              <CardHeader>
+                <CardDescription className="text-red-500">Erro</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p>{error}</p>
+                <Button
+                  className="mt-4"
+                  onClick={() => window.location.reload()}
+                >
+                  Tentar Novamente
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
+    );
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
@@ -111,167 +173,159 @@ export default function SettingsPage() {
         </header>
 
         <div className="flex flex-1 flex-col p-4 pt-0">
-          <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min p-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                Alertas e Notificações
-              </h2>
-              <Button onClick={handleSaveSettings}>Salvar Alterações</Button>
-            </div>
+          <div className="min-h-[100vh] flex-1 rounded-xl bg-background md:min-h-min p-4">
+            {isLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <p>Carregando configurações...</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-2xl font-bold flex items-center gap-2">
+                    <Bell className="h-5 w-5" />
+                    Alertas e Notificações
+                  </h2>
+                  <Button onClick={handleSaveSettings}>
+                    Salvar Alterações
+                  </Button>
+                </div>
 
-            <Card className="bg-[#1A1A1A] border-gray-2">
-              <CardHeader>
-                <CardDescription className="text-gray-400">
-                  Configure como e quando você deseja receber alertas sobre seus
-                  hosts
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Email Alerts */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-base text-white">
-                        Alertas por Email
-                      </Label>
-                      <p className="text-sm text-gray-400">
-                        Receba notificações por email quando houver problemas
-                      </p>
+                <Card>
+                  <CardHeader>
+                    <CardDescription>
+                      Configure como e quando você deseja receber alertas sobre
+                      seus hosts
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Email Alerts */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label className="text-base">Alertas por Email</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Receba notificações por email quando houver
+                            problemas
+                          </p>
+                        </div>
+                        <Switch
+                          checked={settings.emailAlerts}
+                          onCheckedChange={(checked) =>
+                            setSettings({ ...settings, emailAlerts: checked })
+                          }
+                        />
+                      </div>
+
+                      {settings.emailAlerts && (
+                        <div className="p-3 bg-muted rounded-md">
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            <p className="text-sm">
+                              Alertas serão enviados para{" "}
+                              <span className="font-medium">
+                                {userEmail || "seu email de login"}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <Switch
-                      checked={settings.emailAlerts}
-                      onCheckedChange={(checked) =>
-                        setSettings({ ...settings, emailAlerts: checked })
-                      }
-                    />
-                  </div>
 
-                  {settings.emailAlerts && (
-                    <div className="flex items-center gap-4">
-                      <div className="flex-1">
-                        <Label htmlFor="email" className="text-white">
-                          Email para notificações
-                        </Label>
-                        <div className="flex items-center gap-2 mt-1.5">
-                          <Mail className="h-4 w-4 text-gray-400" />
+                    {/* Alert Thresholds */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium">
+                        Limites para Alertas
+                      </h3>
+
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="downtime">
+                            Tempo de Inatividade (minutos)
+                          </Label>
                           <Input
-                            id="email"
-                            type="email"
-                            placeholder="seu@email.com"
-                            value={settings.email}
+                            id="downtime"
+                            type="number"
+                            min="1"
+                            value={settings.downTimeThreshold}
                             onChange={(e) =>
                               setSettings({
                                 ...settings,
-                                email: e.target.value,
+                                downTimeThreshold: e.target.value,
                               })
                             }
-                            className="bg-[#2A2A2A] border-gray-2 text-white"
                           />
+                          <p className="text-sm text-muted-foreground">
+                            Alerta após X minutos offline
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="responsetime">
+                            Tempo de Resposta (milissegundos)
+                          </Label>
+                          <Input
+                            id="responsetime"
+                            type="number"
+                            min="100"
+                            value={settings.responseTimeThreshold}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                responseTimeThreshold: e.target.value,
+                              })
+                            }
+                          />
+                          <p className="text-sm text-muted-foreground">
+                            Alerta se resposta maior que X ms
+                          </p>
                         </div>
                       </div>
                     </div>
-                  )}
-                </div>
 
-                {/* Alert Thresholds */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-white">
-                    Limites para Alertas
-                  </h3>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="downtime" className="text-white">
-                        Tempo de Inatividade (minutos)
-                      </Label>
-                      <Input
-                        id="downtime"
-                        type="number"
-                        min="1"
-                        value={settings.downTimeThreshold}
-                        onChange={(e) =>
-                          setSettings({
-                            ...settings,
-                            downTimeThreshold: e.target.value,
-                          })
-                        }
-                        className="bg-[#2A2A2A] border-gray-2 text-white"
-                      />
-                      <p className="text-sm text-gray-400">
-                        Alerta após X minutos offline
-                      </p>
+                    {/* Status Codes */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium">Códigos de Status</h3>
+                      <div className="space-y-2">
+                        <Label>Notificar para os status</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {["500", "502", "503", "504"].map((status) => {
+                            const isSelected =
+                              settings.notifyOnStatus.includes(status);
+                            return (
+                              <Button
+                                key={status}
+                                type="button"
+                                className={
+                                  isSelected
+                                    ? undefined
+                                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                                }
+                                onClick={() => {
+                                  const newStatus = isSelected
+                                    ? settings.notifyOnStatus.filter(
+                                        (s) => s !== status
+                                      )
+                                    : [...settings.notifyOnStatus, status];
+                                  setSettings({
+                                    ...settings,
+                                    notifyOnStatus: newStatus,
+                                  });
+                                }}
+                              >
+                                {status}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Selecione os códigos de status que devem gerar alertas
+                        </p>
+                      </div>
                     </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="responsetime" className="text-white">
-                        Tempo de Resposta (milissegundos)
-                      </Label>
-                      <Input
-                        id="responsetime"
-                        type="number"
-                        min="100"
-                        value={settings.responseTimeThreshold}
-                        onChange={(e) =>
-                          setSettings({
-                            ...settings,
-                            responseTimeThreshold: e.target.value,
-                          })
-                        }
-                        className="bg-[#2A2A2A] border-gray-2 text-white"
-                      />
-                      <p className="text-sm text-gray-400">
-                        Alerta se resposta maior que X ms
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Status Codes */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-white">
-                    Códigos de Status
-                  </h3>
-                  <div className="space-y-2">
-                    <Label className="text-white">
-                      Notificar para os status
-                    </Label>
-                    <div className="flex flex-wrap gap-2">
-                      {["500", "502", "503", "504"].map((status) => {
-                        const isSelected =
-                          settings.notifyOnStatus.includes(status);
-                        return (
-                          <Button
-                            key={status}
-                            className={
-                              isSelected
-                                ? undefined
-                                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                            }
-                            onClick={() => {
-                              const newStatus = isSelected
-                                ? settings.notifyOnStatus.filter(
-                                    (s) => s !== status
-                                  )
-                                : [...settings.notifyOnStatus, status];
-                              setSettings({
-                                ...settings,
-                                notifyOnStatus: newStatus,
-                              });
-                            }}
-                          >
-                            {status}
-                          </Button>
-                        );
-                      })}
-                    </div>
-                    <p className="text-sm text-gray-400">
-                      Selecione os códigos de status que devem gerar alertas
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </div>
         </div>
       </SidebarInset>
