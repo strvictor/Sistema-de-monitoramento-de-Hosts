@@ -18,4 +18,5 @@ urlpatterns = [
     path('test-status/<int:host_id>', status_code_stats, name='test-status'),
     path('settings/', user_settings, name='user_settings'),
     path('location-server/', get_location_server, name='get_location_server'),
+    path('ssl-certificate/<int:host_id>', ssl_certificate_info, name='ssl_certificate_info'),
 ]

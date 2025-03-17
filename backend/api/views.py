@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404
 from datetime import timedelta
 from .models import UserSettings
 import requests
+from OpenSSL import crypto
 
 def validate_token(request):
     auth = JWTAuthentication()
@@ -607,3 +608,114 @@ def get_location_server(request):
         'regiao': regiao,
         'pais': pais,
     }, status=200)
+
+# Endpoint para obter informações de certificado SSL
+@api_view(['GET'])
+def ssl_certificate_info(request, host_id):
+    valid, user = validate_token(request)
+    if not valid:
+        return user
+    
+    try:
+        host_obj = get_object_or_404(Host, id=host_id, usuario=user)
+        
+        from .sslTest import get_certificate
+        import datetime
+        
+        try:
+            # Obter o certificado SSL
+            cert = get_certificate(host_obj.host)
+            
+            # Formatar as datas
+            not_before = cert.get_notBefore().decode('utf-8')
+            not_after = cert.get_notAfter().decode('utf-8')
+            
+            # Converter formato YYYYMMDDhhmmssZ para objeto datetime
+            format_time = lambda t: datetime.datetime.strptime(t, '%Y%m%d%H%M%SZ')
+            
+            # Formatando para exibição amigável
+            format_display = lambda dt: dt.strftime('%d/%m/%Y %H:%M')
+            
+            not_before_date = format_display(format_time(not_before))
+            not_after_date = format_display(format_time(not_after))
+            
+            # Calcular dias restantes
+            days_remaining = (format_time(not_after) - datetime.datetime.now()).days
+            
+            # Verificar status do certificado
+            is_valid = days_remaining > 0
+            
+            # Determinar o status baseado nos dias restantes
+            status = "válido"
+            if days_remaining <= 0:
+                status = "expirado"
+            elif days_remaining <= 7:
+                status = "crítico"
+            elif days_remaining <= 30:
+                status = "atenção"
+            
+            # Obter informações adicionais do certificado
+            issuer = cert.get_issuer()
+            issuer_name = ", ".join([f"{name.decode()}={value.decode()}" for name, value in issuer.get_components()])
+            issuer_org = next((value.decode() for name, value in issuer.get_components() if name.decode() == 'O'), "Desconhecido")
+            
+            # Obter algoritmo de assinatura
+            signature_algorithm = cert.get_signature_algorithm().decode('utf-8')
+            # Simplificar o nome do algoritmo para exibição
+            if 'sha256' in signature_algorithm.lower():
+                sig_alg_display = "SHA-256"
+            elif 'sha384' in signature_algorithm.lower():
+                sig_alg_display = "SHA-384"
+            elif 'sha512' in signature_algorithm.lower():
+                sig_alg_display = "SHA-512"
+            else:
+                sig_alg_display = signature_algorithm
+            
+            # Verificar se é wildcard
+            subject = cert.get_subject()
+            subject_cn = next((value.decode() for name, value in subject.get_components() if name.decode() == 'CN'), host_obj.host)
+            is_wildcard = subject_cn.startswith('*.')
+            
+            # Verificar bits de segurança
+            key_bits = cert.get_pubkey().bits()
+            
+            # Verificar se é EV (Extended Validation)
+            # Simplificação - normalmente requer verificação adicional
+            is_ev = 'Extended Validation' in issuer_name or key_bits >= 4096
+            
+            # Determinar nível de segurança
+            security_level = "Médio"
+            if key_bits >= 4096 and 'sha512' in signature_algorithm.lower():
+                security_level = "Alto"
+            elif key_bits < 2048 or 'sha1' in signature_algorithm.lower():
+                security_level = "Baixo"
+            
+            return JsonResponse({
+                'success': True,
+                'host': host_obj.host,
+                'not_before': not_before_date,
+                'not_after': not_after_date,
+                'days_remaining': days_remaining,
+                'is_valid': is_valid,
+                'status': status,
+                'issuer': {
+                    'name': issuer_name,
+                    'organization': issuer_org
+                },
+                'signature_algorithm': sig_alg_display,
+                'key_bits': key_bits,
+                'security_level': security_level,
+                'is_wildcard': is_wildcard,
+                'subject_cn': subject_cn,
+                'is_ev': is_ev
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': f'Não foi possível obter informações do certificado SSL: {str(e)}',
+                'host': host_obj.host
+            }, status=500)
+            
+    except Host.DoesNotExist:
+        return JsonResponse({'error': 'Host não encontrado'}, status=404)

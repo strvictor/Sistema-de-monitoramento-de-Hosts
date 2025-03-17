@@ -30,7 +30,7 @@ import {
 
 import styles from "./styles/Dashboard.module.css";
 import { Chart1 } from "../components/charts/Chat1";
-// import { Chart2 } from "./charts/Chat2"
+import { SSLCertInfo } from "./charts/SSLCertInfo";
 import { Chart3 } from "./charts/Chart3";
 import api from "@/axiosConfig";
 
@@ -48,14 +48,11 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchHosts = async () => {
       try {
-        const response = await api.get(
-          "list-hosts/",
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-            },
-          }
-        );
+        const response = await api.get("list-hosts/", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        });
         console.log("Resposta da API:", response.data);
         setHosts(response.data.hosts);
       } catch (error) {
@@ -77,7 +74,13 @@ export default function Dashboard() {
     const fetchLocation = async () => {
       try {
         const response = await api.get("location-server/");
-        setLocation(response.data.cidade + ", " + response.data.regiao + ", " + response.data.pais);
+        setLocation(
+          response.data.cidade +
+            ", " +
+            response.data.regiao +
+            ", " +
+            response.data.pais
+        );
       } catch (error) {
         console.error("Erro ao buscar localização", error);
       }
@@ -85,7 +88,7 @@ export default function Dashboard() {
 
     fetchLocation();
   }, []);
-  
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -113,19 +116,6 @@ export default function Dashboard() {
         <div className="flex flex-1 flex-col p-4 pt-0">
           <div className="flex-1 rounded-xl bg-muted/50 md:min-h-min p-4">
             <div className="flex items-center justify-between pb-4">
-              {/* <motion.p
-                className="text-sm font-bold"
-                animate={{
-                  color: ['#93c5fd', '#6ee7b7', '#fca5a5']
-                }}
-                transition={{
-                  duration: 6,
-                  repeat: Infinity,
-                  ease: 'easeInOut'
-                }}
-              >
-                Escolha um host para monitoramento inteligente e análise preditiva
-              </motion.p> */}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger className="flex items-center gap-2">
@@ -138,7 +128,7 @@ export default function Dashboard() {
                 </Tooltip>
               </TooltipProvider>
 
-              <Select onValueChange={(value) => setSelectedHost(value)}>
+              <Select onValueChange={(value: string) => setSelectedHost(value)}>
                 <SelectTrigger
                   className={`w-[180px] ${
                     !selectedHost ? styles.selectWarning : ""
@@ -166,7 +156,9 @@ export default function Dashboard() {
               <div>
                 <Chart1 selectedHost={selectedHost} />
               </div>
-              <div className="text-center text-gray-500">Em desenvolvimento</div>
+              <div>
+                <SSLCertInfo selectedHost={selectedHost} />
+              </div>
             </div>
             <div>
               <Chart3 selectedHost={selectedHost} />
