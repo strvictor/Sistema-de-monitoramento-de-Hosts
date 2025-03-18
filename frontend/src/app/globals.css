@@ -2,6 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Animações globais */
+@keyframes blob {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  25% {
+    transform: translate(20px, -30px) scale(1.15);
+  }
+  50% {
+    transform: translate(-15px, 25px) scale(0.85);
+  }
+  75% {
+    transform: translate(15px, -25px) scale(1.05);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+.animate-blob {
+  animation: blob 15s ease-in-out infinite alternate !important;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s !important;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s !important;
+}
+
 @layer utilities {
   .animate-fade-in {
     animation: fadeIn 0.5s ease-in-out;
