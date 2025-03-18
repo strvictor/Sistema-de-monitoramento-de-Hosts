@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Label, Pie, PieChart } from "recharts";
-import axios from "axios";
 
 import {
   Card,
@@ -18,6 +17,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import api from "@/axiosConfig";
 
 interface StatusData {
   time: string;
@@ -42,19 +42,19 @@ const chartConfig: ChartConfig = {
   },
   "200": {
     label: "Status 200",
-    color: "hsl(var(--chart-1))",
+    color: "#004800", // Verde escuro
   },
   "204": {
     label: "Status 204",
-    color: "hsl(var(--chart-2))",
+    color: "#556B2F", // Verde oliva escuro
   },
   "400": {
     label: "Status 400",
-    color: "hsl(var(--chart-3))",
+    color: "#8B0000", // Vermelho escuro
   },
   "500": {
     label: "Status 500",
-    color: "hsl(var(--chart-4))",
+    color: "#2E004E", // Índigo escuro
   },
 } satisfies ChartConfig;
 
@@ -66,8 +66,8 @@ export function Chart1({ selectedHost }: Chart1Props) {
     const fetchData = async () => {
       if (selectedHost) {
         try {
-          const response = await axios.get<StatusData[]>(
-            `http://localhost:8000/api/test-status/${selectedHost}`,
+          const response = await api.get<StatusData[]>(
+            `test-status/${selectedHost}`,
             {
               headers: {
                 Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
@@ -92,7 +92,14 @@ export function Chart1({ selectedHost }: Chart1Props) {
             ([status, count]) => ({
               status,
               count: count as number,
-              fill: `var(--color-${status})`,
+              fill:
+                status === "200"
+                  ? "#004800"
+                  : status === "204"
+                  ? "#556B2F"
+                  : status === "400"
+                  ? "#8B0000"
+                  : "#2E004E",
             })
           );
 
@@ -112,69 +119,68 @@ export function Chart1({ selectedHost }: Chart1Props) {
   }, [selectedHost]);
 
   return (
-    <Card className="flex flex-col h-full">
+    <Card className="flex flex-col h-full text-white">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Status das Requisições</CardTitle>
+        <CardTitle>Status Code das Requisições</CardTitle>
         <CardDescription>Distribuição dos códigos de status</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0 flex justify-center items-center">
         <ChartContainer
           config={chartConfig}
-          className="aspect-square max-h-[400px] w-full"
+          className="w-full flex justify-center items-center"
         >
-          <div>
-            <PieChart width={400} height={400}>
-              <ChartTooltip
-                cursor={false}
-                content={<ChartTooltipContent hideLabel />}
+          <PieChart width={400} height={400}>
+            <ChartTooltip
+              cursor={false}
+              content={<ChartTooltipContent hideLabel />}
+            />
+            <Pie
+              data={chartData}
+              dataKey="count"
+              nameKey="status"
+              cx="50%"
+              cy="50%"
+              innerRadius="40%"
+              outerRadius="80%"
+              stroke="none"
+            >
+              <Label
+                content={({ viewBox }) => {
+                  if (!viewBox) return null;
+                  const { cx, cy } = viewBox as unknown as {
+                    cx: number;
+                    cy: number;
+                  };
+                  return (
+                    <text
+                      x={cx}
+                      y={cy}
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                    >
+                      <tspan
+                        x={cx}
+                        y={cy - 10}
+                        className="fill-white text-3xl font-bold"
+                      >
+                        {totalRequests}
+                      </tspan>
+                      <tspan x={cx} y={cy + 15} className="fill-gray-400">
+                        Requisições
+                      </tspan>
+                    </text>
+                  );
+                }}
               />
-              <Pie
-                data={chartData}
-                dataKey="count"
-                nameKey="status"
-                innerRadius={80}
-                outerRadius={160}
-                stroke="none"
-              >
-                <Label
-                  content={({ viewBox }) => {
-                    if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                      return (
-                        <text
-                          x={viewBox.cx}
-                          y={viewBox.cy}
-                          textAnchor="middle"
-                          dominantBaseline="middle"
-                        >
-                          <tspan
-                            x={viewBox.cx}
-                            y={viewBox.cy}
-                            className="fill-foreground text-3xl font-bold"
-                          >
-                            {totalRequests}
-                          </tspan>
-                          <tspan
-                            x={viewBox.cx}
-                            y={(viewBox.cy || 0) + 24}
-                            className="fill-muted-foreground"
-                          >
-                            Requisições
-                          </tspan>
-                        </text>
-                      );
-                    }
-                  }}
-                />
-              </Pie>
-            </PieChart>
-          </div>
+            </Pie>
+          </PieChart>
         </ChartContainer>
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
         <div className="flex items-center gap-2 font-medium leading-none">
           Total de requisições: {totalRequests}
         </div>
-        <div className="leading-none text-muted-foreground">
+        <div className="leading-none text-gray-400">
           Mostrando a distribuição dos códigos de status
         </div>
       </CardFooter>
