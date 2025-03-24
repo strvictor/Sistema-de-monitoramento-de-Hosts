@@ -20,11 +20,14 @@ RUN npm run build
 # Etapa final: use o Nginx para servir os arquivos estáticos
 FROM nginx:alpine
 
-# Copie a configuração do Nginx personalizada (para suportar React Router)
+# Copie a configuração do Nginx personalizada
 COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copie os arquivos buildados para a pasta padrão do Nginx
 COPY --from=build /app/dist /usr/share/nginx/html
+
+# Adicione um arquivo de configuração específico para o React Router
+RUN echo 'location / { try_files $uri $uri/ /index.html; }' > /etc/nginx/conf.d/react-router.conf
 
 # Exponha a porta 80
 EXPOSE 80
