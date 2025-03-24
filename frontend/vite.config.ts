@@ -10,6 +10,19 @@ export default defineConfig({
     },
   },
   server: {
-    host: true, // Permite que o Vite rode em rede local
+    host: true,
+    port: 5173,
+    strictPort: true,
+  },
+  build: {
+    outDir: "dist",
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router-dom"],
+        },
+      },
+    },
   },
 });

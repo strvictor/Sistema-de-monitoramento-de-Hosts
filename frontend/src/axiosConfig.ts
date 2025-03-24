@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://mnt-hosts.dev-strvictor.online:8000/api",
+  baseURL: "https://mnt-hosts.dev-strvictor.online/api",
   headers: {
     "Content-Type": "application/json",
   },
@@ -16,7 +16,9 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
 // Trata erros de autenticação e refresh token
