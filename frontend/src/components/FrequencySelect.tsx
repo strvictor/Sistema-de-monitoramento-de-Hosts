@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
-import axios from "axios"
 import {
   Select,
   SelectTrigger,
@@ -9,6 +8,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select"
+import api from "@/axiosConfig"
 
 type Frequency = {
   id: number | string
@@ -26,7 +26,7 @@ const FrequencySelect: React.FC<FrequencySelectProps> = ({ value, onValueChange 
   useEffect(() => {
     const fetchFrequencies = async () => {
       try {
-        const response = await axios.get("http://localhost:8000/api/frequency-data/", {
+        const response = await api.get("/frequency-data/", {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
           },

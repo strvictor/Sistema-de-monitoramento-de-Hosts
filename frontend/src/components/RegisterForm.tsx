@@ -3,13 +3,13 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { AlertDescription, AlertTitle } from "./ui/alert";
-import axios from "axios";
 import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "./ui/dialog";
+import api from "@/axiosConfig";
 
 export function RegisterForm() {
   // Estados para armazenar os valores do formulário
@@ -34,8 +34,8 @@ export function RegisterForm() {
         password: password,
       };
 
-      const response = await axios.post(
-        "http://localhost:8000/api/create-account/",
+      const response = await api.post(
+        "/create-account/",
         data
       );
 
