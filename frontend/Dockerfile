@@ -6,8 +6,9 @@ WORKDIR /app
 # Copie os arquivos de dependências e instale-os
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm install
-# Instala o TypeScript e Vite globalmente
-RUN npm install -g typescript vite
+
+# Instala as dependências de desenvolvimento do Vite
+RUN npm install -D @vitejs/plugin-react @types/node typescript vite
 
 # Copie o restante do código e construa o projeto
 COPY frontend/ .
