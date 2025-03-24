@@ -26,8 +26,8 @@ COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 # Copie os arquivos buildados para a pasta padrão do Nginx
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Adicione um arquivo de configuração específico para o React Router
-RUN echo 'location / { try_files $uri $uri/ /index.html; }' > /etc/nginx/conf.d/react-router.conf
+# Configure o Nginx para servir o index.html para todas as rotas
+RUN echo 'location / { try_files $uri $uri/ /index.html; index index.html; }' > /etc/nginx/conf.d/react-router.conf
 
 # Exponha a porta 80
 EXPOSE 80
