@@ -39,7 +39,7 @@ services:
       dockerfile: frontend/Dockerfile
     container_name: react_frontend
     ports:
-      - "3000:80"  # Mapeia a porta 80 do container para a 3000 localmente
+      - "443:443"  # Mapeia a porta 80 do container para a 3000 localmente
 
 
   redis:
