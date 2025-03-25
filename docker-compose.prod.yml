@@ -48,8 +48,12 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
     container_name: react_frontend
+    environment:
+      - NODE_ENV=production
     expose:
       - "80"
+    depends_on:
+      - backend
     networks:
       - app-network
 
@@ -103,6 +107,22 @@ services:
       POSTGRES_PORT: 5432
       CELERY_BROKER_URL: ${CELERY_BROKER_URL}
       DEBUG: "False"
+    networks:
+      - app-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx_proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx_subdominio.conf:/etc/nginx/conf.d/default.conf
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - frontend
+      - backend
+    restart: always
     networks:
       - app-network
 
