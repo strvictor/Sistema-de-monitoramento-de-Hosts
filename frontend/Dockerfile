@@ -3,38 +3,37 @@ FROM node:18-alpine as build
 
 WORKDIR /app
 
-# Instalar dependências globais
+# Instalar dependências globais necessárias
 RUN npm install -g typescript vite
 
 # Copiar package.json e package-lock.json
 COPY frontend/package.json frontend/package-lock.json ./
 
-# Instalar TODAS as dependências, incluindo devDependencies
-RUN npm install --include=dev
+# Limpar cache e instalar dependências com base no package-lock.json
+RUN npm cache clean --force && npm ci
 
-# Instalar explicitamente o plugin do React para o Vite
-RUN npm install --save-dev @vitejs/plugin-react-swc
+# Instalar explicitamente os plugins do Vite para React
+RUN npm install --save-dev @vitejs/plugin-react @vitejs/plugin-react-swc
 
 # Copiar todo o código fonte
 COPY frontend/ ./
 
-# Verificar conteúdo do diretório para debug
-RUN ls -la
-RUN ls -la node_modules/@vitejs || echo "Diretório não encontrado"
+# Verificar se os módulos estão instalados corretamente
+RUN ls -la node_modules/@vitejs || echo "Diretório @vitejs não encontrado"
 
-# Executar vite build
+# Executar o build com o Vite
 RUN npx vite build
 
 # Estágio de produção
 FROM nginx:alpine
 
-# Remover configuração padrão
+# Remover configuração padrão do Nginx
 RUN rm -rf /etc/nginx/conf.d/*
 
 # Copiar arquivos de build para o diretório do Nginx
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Criar configuração simples do Nginx
+# Criar configuração personalizada do Nginx
 RUN echo 'server { \
     listen 80; \
     root /usr/share/nginx/html; \
@@ -44,7 +43,7 @@ RUN echo 'server { \
     } \
 }' > /etc/nginx/conf.d/default.conf
 
-# Expor porta 80
+# Expor a porta 80
 EXPOSE 80
 
 # Comando para iniciar o Nginx
