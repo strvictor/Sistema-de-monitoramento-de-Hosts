@@ -1,32 +1,31 @@
-# Etapa de build com Node
+# Estágio de build
 FROM node:18-alpine as build
 
 WORKDIR /app
 
-# Copie os arquivos de dependências e instale-os
-COPY frontend/package.json frontend/package-lock.json ./
+# Copiar arquivos de dependências
+COPY frontend/package*.json ./
+
+# Instalar dependências
 RUN npm install
 
-# Instala o TypeScript e Vite globalmente
-RUN npm install -g typescript vite
-
-# Instala as dependências de desenvolvimento do Vite
-RUN npm install -D @vitejs/plugin-react @types/node
-
-# Copie o restante do código e construa o projeto
+# Copiar código fonte
 COPY frontend/ .
+
+# Build da aplicação
 RUN npm run build
 
-# Etapa final: use o Nginx para servir os arquivos estáticos
+# Estágio de produção
 FROM nginx:alpine
 
-# Copie a configuração do Nginx personalizada
-COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
-
-# Copie os arquivos buildados para a pasta padrão do Nginx
+# Copiar arquivos de build para o diretório do Nginx
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Exponha a porta 80
+# Copiar configuração do Nginx
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Expor porta 80
 EXPOSE 80
 
+# Comando para iniciar o Nginx
 CMD ["nginx", "-g", "daemon off;"]

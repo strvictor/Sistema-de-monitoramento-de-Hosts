@@ -132,7 +132,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://34.55.175.64:3000",
-    'http://mnt-hosts.dev-strvictor.online:3000'
+    'http://mnt-hosts.dev-strvictor.online:3000',
+    'https://mnt-hosts.dev-strvictor.online:3000',
 ]
 
 CORS_ALLOW_CREDENTIALS = True
