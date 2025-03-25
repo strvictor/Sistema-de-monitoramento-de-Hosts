@@ -9,14 +9,21 @@ RUN npm install -g typescript vite
 # Copiar package.json e package-lock.json
 COPY frontend/package.json frontend/package-lock.json ./
 
-# Instalar dependências
-RUN npm install
+# Instalar TODAS as dependências, incluindo devDependencies
+RUN npm install --include=dev
+
+# Instalar explicitamente o plugin do React para o Vite
+RUN npm install --save-dev @vitejs/plugin-react-swc
 
 # Copiar todo o código fonte
 COPY frontend/ ./
 
-# Executar vite diretamente sem o typescript
-RUN npx vite build --config vite.config.ts
+# Verificar conteúdo do diretório para debug
+RUN ls -la
+RUN ls -la node_modules/@vitejs || echo "Diretório não encontrado"
+
+# Executar vite build
+RUN npx vite build
 
 # Estágio de produção
 FROM nginx:alpine
