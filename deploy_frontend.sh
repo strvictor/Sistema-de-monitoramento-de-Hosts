@@ -5,6 +5,19 @@ set -e
 
 echo "🚀 Iniciando build e deploy do frontend para o Sistema de Monitoramento de Hosts..."
 
+# Verificar se o Node.js está instalado
+if ! command -v npm &> /dev/null; then
+  echo "🔧 Node.js e npm não estão instalados. Instalando..."
+  sudo apt update
+  sudo apt install -y ca-certificates curl gnupg
+  sudo mkdir -p /etc/apt/keyrings
+  curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+  echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
+  sudo apt update
+  sudo apt install -y nodejs
+  echo "✅ Node.js $(node -v) e npm $(npm -v) instalados com sucesso."
+fi
+
 # Diretório temporário para o build
 BUILD_DIR="/tmp/frontend_build"
 mkdir -p $BUILD_DIR
