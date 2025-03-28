@@ -34,14 +34,14 @@ RUN rm -rf /etc/nginx/conf.d/*
 COPY --from=build /app/dist /usr/share/nginx/html
 
 # Criar configuração personalizada do Nginx
-RUN echo 'server { \
-    listen 80; \
-    root /usr/share/nginx/html; \
-    index index.html; \
-    location / { \
-        try_files $uri $uri/ /index.html; \
-    } \
-}' > /etc/nginx/conf.d/default.conf
+# RUN echo 'server { \
+#     listen 80; \
+#     root /usr/share/nginx/html; \
+#     index index.html; \
+#     location / { \
+#         try_files $uri $uri/ /index.html; \
+#     } \
+# }' > /etc/nginx/conf.d/default.conf
 
 # Expor a porta 80
 EXPOSE 80
