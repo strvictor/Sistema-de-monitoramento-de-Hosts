@@ -31,7 +31,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const fetchHosts = async () => {
     try {
       const response = await api.get("/list-hosts/");
-      console.log("Resposta da API de hosts:", response.data);
       const hostsData = response.data.hosts || [];
       setHosts(hostsData);
     } catch (error) {
@@ -44,7 +43,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const fetchUserData = async () => {
       try {
         const response = await api.get("/user-data/");
-        console.log("Dados do usuário:", response.data);
         setUser({
           name: response.data.name,
           email: response.data.email,

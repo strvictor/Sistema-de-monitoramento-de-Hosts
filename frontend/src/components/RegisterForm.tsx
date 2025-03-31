@@ -39,7 +39,6 @@ export function RegisterForm() {
         data
       );
 
-      console.log("Usuário registrado com sucesso:", response.data);
       setAlert({
         type: "success",
         message: "Conta criada com sucesso! Redirecionando...",

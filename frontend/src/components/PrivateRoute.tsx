@@ -10,17 +10,14 @@ const PrivateRoute = ({ element }: { element: JSX.Element }) => {
     const checkAuth = async () => {
       const token = localStorage.getItem('accessToken');
       if (token) {
-        console.log('Token encontrado:', token);
         try {
           await api.post('token/verify/', { token });
-          console.log('Token válido');
           setIsAuthenticated(true);
         } catch (error: any) {
           console.error('Token inválido ou expirado:', error.response?.data || error.message);
           setIsAuthenticated(false);
         }
       } else {
-        console.log('Nenhum token encontrado');
         setIsAuthenticated(false);
       }
     };

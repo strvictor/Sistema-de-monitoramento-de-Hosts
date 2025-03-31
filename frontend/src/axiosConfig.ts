@@ -38,7 +38,6 @@ api.interceptors.response.use(
 
       if (refreshToken) {
         try {
-          console.log("Tentando atualizar o token...");
           const response = await api.post(
             "/token/refresh/",
             { refresh: refreshToken },
@@ -46,7 +45,6 @@ api.interceptors.response.use(
           );
 
           const { access } = response.data;
-          console.log("Token atualizado com sucesso");
 
           localStorage.setItem("accessToken", access);
           originalRequest.headers.Authorization = `Bearer ${access}`;
@@ -63,7 +61,6 @@ api.interceptors.response.use(
           return Promise.reject(refreshError);
         }
       } else {
-        console.log("Nenhum refresh token disponível");
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
 
