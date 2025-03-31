@@ -80,4 +80,3 @@ A aplicação é construída com uma arquitetura moderna utilizando Django (back
 ├── docker-compose.yml     # Configuração dos serviços
 └── .env                   # Variáveis de ambiente
 ```
-
