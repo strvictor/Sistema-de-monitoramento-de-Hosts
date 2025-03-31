@@ -25,9 +25,6 @@ export function LoginPage() {
       localStorage.setItem("accessToken", access);
       localStorage.setItem("refreshToken", refresh);
 
-      console.log("Login bem-sucedido, tokens armazenados!");
-      console.log(access);
-      console.log(refresh);
 
       navigate("/dashboard"); // Redireciona para a página Dashboard
     } catch (error: any) {

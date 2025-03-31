@@ -31,7 +31,6 @@ const FrequencySelect: React.FC<FrequencySelectProps> = ({ value, onValueChange 
             Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
           },
         })
-        console.log(response.data.frequencies)
         setFrequencies(response.data.frequencies)
       } catch (error) {
         console.error("Erro ao buscar dados de frequência", error)

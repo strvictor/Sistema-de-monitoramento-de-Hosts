@@ -65,7 +65,6 @@ export default function SettingsPage() {
       try {
         // Buscar as configurações do usuário no backend
         const response = await api.get("/settings/");
-        console.log(response.data);
         if (response.data && response.data.user) {
           setUserEmail(response.data.user.email || "");
         }
@@ -112,7 +111,6 @@ export default function SettingsPage() {
         email: userEmail,
       });
 
-      console.log("Resposta do salvamento:", response.data);
 
       // Mostrar feedback de sucesso
       setSaveSuccess(true);

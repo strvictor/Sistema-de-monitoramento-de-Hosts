@@ -53,7 +53,6 @@ export default function Dashboard() {
             Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
           },
         });
-        console.log("Resposta da API:", response.data);
         setHosts(response.data.hosts);
       } catch (error) {
         console.error("Erro ao buscar hosts", error);

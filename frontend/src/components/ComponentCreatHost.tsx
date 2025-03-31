@@ -184,7 +184,6 @@ export function ComponentCreateHost() {
         status: h.status.toString(),
       }));
       setHosts(transformedHosts);
-      console.log("Hosts carregados com sucesso:", transformedHosts);
     } catch (error) {
       console.error("Erro ao buscar hosts", error);
     }
