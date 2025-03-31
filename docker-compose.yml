@@ -102,7 +102,8 @@ networks:
   default:
     name: app_network
     driver: bridge
-    
+
 volumes:
   postgres_data:
   static_volume:
+  - /etc/letsencrypt:/etc/letsencrypt:ro
