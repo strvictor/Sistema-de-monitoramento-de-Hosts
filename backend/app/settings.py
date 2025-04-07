@@ -173,7 +173,7 @@ CELERY_TASK_SERIALIZER = "json"
 
 CELERY_CACHE_BACKEND = "django-cache"  # Usa cache do Django para os resultados
 CELERY_RESULT_BACKEND = "django-db"
-CELERY_BEAT_SYNC_EVERY = 30  # Sincroniza a cada 30 segundos (em vez de 5 minutos)
+CELERY_BEAT_SYNC_EVERY = 30  
 
 # Configuração para arquivos estáticos
 STATIC_URL = '/static/'

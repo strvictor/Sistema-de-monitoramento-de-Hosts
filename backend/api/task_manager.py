@@ -9,7 +9,6 @@ from celery import shared_task
 from playwright.sync_api import sync_playwright
 
 
-
 def measure_load_time(url):
     """
     Mede o tempo de carregamento da página usando Playwright.

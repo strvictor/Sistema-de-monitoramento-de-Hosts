@@ -54,7 +54,7 @@ export function Chart3({ selectedHost }: Chart3Props) {
       setLoading(true);
       setError(null);
       try {
-        const response = await api.get(`/test/${selectedHost}`);
+        const response = await api.get(`/latency-loadtime/${selectedHost}`);
         setChartData(response.data);
       } catch (err) {
         console.error("Erro ao buscar dados do gráfico:", err);

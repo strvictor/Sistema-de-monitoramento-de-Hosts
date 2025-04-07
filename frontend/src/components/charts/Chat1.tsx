@@ -67,7 +67,7 @@ export function Chart1({ selectedHost }: Chart1Props) {
       if (selectedHost) {
         try {
           const response = await api.get<StatusData[]>(
-            `test-status/${selectedHost}`,
+            `status-code/${selectedHost}`,
             {
               headers: {
                 Authorization: `Bearer ${localStorage.getItem("accessToken")}`,

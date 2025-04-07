@@ -5,14 +5,18 @@ from api.models import FrequenciaAtualizacao, Host
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
-import json, re
+import json, re, requests
 from django_celery_beat.models import PeriodicTask, IntervalSchedule
 from .task_manager import save_historys
 from django.shortcuts import get_object_or_404
 from datetime import timedelta
 from .models import UserSettings
-import requests
-from OpenSSL import crypto
+from django.db.models import Avg, F, Func, FloatField, DateTimeField, Q, Count
+from django.db.models.functions import Cast
+from .models import HostHistory
+from .sslTest import get_certificate
+import datetime
+
 
 def validate_token(request):
     auth = JWTAuthentication()
@@ -101,6 +105,7 @@ def create_account(request):
 
     return JsonResponse({'error': 'Método não permitido. Use POST.'}, status=405)
 
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])  
 def get_user_data(request):
@@ -114,6 +119,7 @@ def get_user_data(request):
     }
 
     return JsonResponse(data)
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -210,7 +216,6 @@ def list_hosts(request):
     if not valid:
         return user
     
-
     data = {
         'hosts': [
             {
@@ -234,6 +239,7 @@ def list_hosts(request):
 
     return JsonResponse(data)
 
+
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def delete_host(request, host_id):
@@ -254,6 +260,7 @@ def delete_host(request, host_id):
         return JsonResponse({'error': 'Host não encontrado.'}, status=404)
     except Exception as e:
         return JsonResponse({'error': f'Ocorreu um erro ao excluir o host: {str(e)}'}, status=500)
+    
     
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
@@ -331,104 +338,6 @@ def update_host(request, host_id):
         return JsonResponse({'error': f'Ocorreu um erro ao editar o host: {str(e)}'}, status=500)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# from django.db.models import Avg, F, Func, FloatField
-# from django.db.models.functions import Cast, TruncHour  # Ajuste na importação do Cast
-# from .models import HostHistory  # ajuste conforme seu app/modelo
-# from rest_framework.decorators import api_view
-# from django.http import JsonResponse
-
-# # Função para extrair o valor numérico, removendo unidades
-# class RemoveUnit(Func):
-#     function = 'REGEXP_REPLACE'  # Função SQL para substituir padrões
-#     template = "%(function)s(%(expressions)s, '[^0-9\.]', '', 'g')"
-
-#     def __init__(self, expression, **extra):
-#         super().__init__(expression, **extra)
-
-# @api_view(['GET'])
-# def test(request):
-#     # Agrupa os registros por hora da última atualização e calcula a média dos campos
-#     dados = (
-#         HostHistory.objects
-#         .annotate(hour=TruncHour('ultima_atualizacao'))
-#         .values('hour')
-#         .annotate(
-#             # Primeiro remove as unidades e depois converte para FloatField
-#             avg_latency_avg=Avg(Cast(RemoveUnit(F('avg_latency')), FloatField())),
-#             load_time_avg=Avg(Cast(RemoveUnit(F('load_time')), FloatField()))
-#         )
-#         .order_by('hour')
-#     )
-
-#     chartData = []
-#     for d in dados:
-#         chartData.append({
-#             'hour': d['hour'].strftime('%H:%M'),  # formato ex: "14:00"
-#             'avg_latency': d['avg_latency_avg'],
-#             'load_time': d['load_time_avg'],
-#         })
-
-#     # Retorna os dados após o loop (fora do for)
-#     return JsonResponse(chartData, safe=False)
-
-from django.db.models import Avg, F, Func, FloatField, DateTimeField, Q, Count
-from django.db.models.functions import Cast
-from .models import HostHistory  # ajuste conforme seu app/modelo
-from rest_framework.decorators import api_view
-from django.http import JsonResponse
-from datetime import timedelta
-
 # Classe personalizada para truncar em intervalos de 10 minutos
 class Trunc10Minute(Func):
     function = 'to_timestamp'
@@ -440,14 +349,14 @@ class RemoveUnit(Func):
     function = 'REGEXP_REPLACE'
     template = "%(function)s(%(expressions)s, '[^0-9\.]', '', 'g')"
 
+
 @api_view(['GET'])
-def test(request, host_id):
+def latency_loadtime(request, host_id):
     valid, user = validate_token(request)
     if not valid:
         return user
     
     host = get_object_or_404(Host, id=host_id)
-    
     
     # Filtra registros com valores numéricos válidos
     dados = (
@@ -481,11 +390,8 @@ def test(request, host_id):
     return JsonResponse(chartData, safe=False)
 
 
-
-
-
 @api_view(['GET'])
-def status_code_stats(request, host_id):
+def status_code(request, host_id):
     valid, user = validate_token(request)
     if not valid:
         return user
@@ -519,7 +425,6 @@ def status_code_stats(request, host_id):
         })
 
     return JsonResponse(formatted_data, safe=False)
-
 
 
 @api_view(['GET', 'POST'])
@@ -609,6 +514,7 @@ def get_location_server(request):
         'pais': pais,
     }, status=200)
 
+
 # Endpoint para obter informações de certificado SSL
 @api_view(['GET'])
 def ssl_certificate_info(request, host_id):
@@ -618,10 +524,7 @@ def ssl_certificate_info(request, host_id):
     
     try:
         host_obj = get_object_or_404(Host, id=host_id, usuario=user)
-        
-        from .sslTest import get_certificate
-        import datetime
-        
+
         try:
             # Obter o certificado SSL
             cert = get_certificate(host_obj.host)
